@@ -41,29 +41,6 @@ export function CreateProjectModal({ open, onOpenChange, user }: CreateProjectMo
 
   const handleCreateProject = useCallback(async () => {
     try {
-
-      console.log('data', projectName,
-        description,
-        {
-          checkList: {
-            language: "en",
-            level: checklistLevel,
-          },
-          testCase: {
-            language: "en",
-            // step_detail_level: "low",
-            testing_types: {
-              include_header_and_footer: testingTypes.uiux,
-              ui_testing: testingTypes.integration,
-              security_testing: testingTypes.security,
-              performance_testing: testingTypes.performance,
-              accessibility_testing: testingTypes.accessibility,
-              data_validation_testing: testingTypes.dataValidation,
-            }
-          }
-        },
-        user?.id)
-
       const response = await createProject(
         projectName,
         description,

@@ -20,23 +20,15 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { TestTube, Users, FolderOpen, MessageSquare, Plus, ChevronDown, BarChart3, Home } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createClient } from "@/lib/supabase/server"
+import { useUser } from '@supabase/auth-helpers-react'
 
 interface AppSidebarProps {
   onCreateProject: () => void
 }
 
-export async function AppSidebar({ onCreateProject }: AppSidebarProps) {
+export function AppSidebar({ onCreateProject }: AppSidebarProps) {
   const pathname = usePathname()
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.auth.getUser();
-
-  console.log('data:', data)
-
-  if (error || !data?.user) {
-    redirect('/');
-  }
+  const user = useUser()
 
   const [isProjectsHovered, setIsProjectsHovered] = useState(false)
 
@@ -176,8 +168,8 @@ export async function AppSidebar({ onCreateProject }: AppSidebarProps) {
             <AvatarFallback>HD</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{data.user.user_metadata.name}</p>
-            <p className="text-xs text-gray-500 truncate">{data.user.email}</p>
+            <p className="text-sm font-medium truncate">{user?.user_metadata.name}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
           </div>
           <ChevronDown className="w-4 h-4 text-gray-400" />
         </div>

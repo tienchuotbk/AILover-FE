@@ -9,13 +9,15 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { CreateProjectModal } from "@/components/create-project-modal"
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false)
   const [requirements, setRequirements] = useState("")
 
   return (
     <SidebarProvider>
-      <AppSidebar onCreateProject={() => setIsCreateProjectOpen(true)} />
+      <AppSidebar
+        onCreateProject={() => setIsCreateProjectOpen(true)}
+      />
       <SidebarInset>
         <div className="flex-1 space-y-4 p-8 pt-6">
           <div className="flex items-center justify-between space-y-2">

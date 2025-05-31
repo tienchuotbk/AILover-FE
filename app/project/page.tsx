@@ -8,8 +8,9 @@ import { Search, Calendar, Plus, Loader2 } from "lucide-react"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { CreateProjectModal } from "@/components/create-project-modal"
-import { getProjects } from "@/lib/action/project"
+import { getProject, getProjects } from "@/lib/action/project"
 import { useUser } from "@supabase/auth-helpers-react"
+import { useRouter } from "next/navigation"
 // import { getProjects } from "@/lib/actions/projects"
 // import type { Project } from "@/lib/types"
 
@@ -20,6 +21,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const router = useRouter();
 
   const user = useUser();
 
@@ -46,6 +48,10 @@ export default function ProjectsPage() {
 //       project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 //       project.description?.toLowerCase().includes(searchQuery.toLowerCase()),
 //   )
+
+  const handleViewProject = async (id: number) => {
+    router.push('/project/'+ id);
+  }
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("vi-VN", {
@@ -103,18 +109,18 @@ export default function ProjectsPage() {
             >
               All projects
             </Button>
-            <Button
+            {/* <Button
               variant={activeTab === "deleted" ? "default" : "ghost"}
               onClick={() => setActiveTab("deleted")}
               className="rounded-full"
             >
               Deleted
-            </Button>
+            </Button> */}
           </div>
 
           {/* Projects Grid */}
-          {/* <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredProjects.map((project) => (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => (
               <Card key={project.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <CardTitle className="text-lg">{project.name}</CardTitle>
@@ -124,19 +130,19 @@ export default function ProjectsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span>{project.featuresCount} features</span>
+                    <span>Created at</span>
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1" />
-                      Updated {formatDate(project.updatedAt)}
+                      {formatDate(project.created_at)}
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" onClick={() => handleViewProject(project.id)}>
                     View project
                   </Button>
                 </CardContent>
               </Card>
             ))}
-          </div> */}
+          </div>
 
           {/* {filteredProjects.length === 0 && !loading && (
             <div className="text-center py-12">

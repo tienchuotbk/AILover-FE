@@ -66,6 +66,9 @@ export function CreateProjectModal({ open, onOpenChange, user }: CreateProjectMo
       );
 
       console.log('Project created:', response)
+      if(response.id){
+        onOpenChange(false);
+      }
     } catch (error: any) {
       console.log("Error creating project:", error?.message)
     }

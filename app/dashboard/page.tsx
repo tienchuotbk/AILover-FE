@@ -105,7 +105,7 @@ export default async function DashboardPage() {
         </div>
       </SidebarInset>
 
-      <CreateProjectModal open={isCreateProjectOpen} onOpenChange={setIsCreateProjectOpen} />
+      {/* <CreateProjectModal open={isCreateProjectOpen} onOpenChange={setIsCreateProjectOpen} /> */}
     </SidebarProvider>
   )
 }

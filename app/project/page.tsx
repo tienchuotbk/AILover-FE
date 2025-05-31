@@ -13,6 +13,7 @@ import { useUser } from "@supabase/auth-helpers-react"
 // import { getProjects } from "@/lib/actions/projects"
 // import type { Project } from "@/lib/types"
 
+
 export default function ProjectsPage() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("all")

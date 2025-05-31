@@ -26,7 +26,7 @@ interface AppSidebarProps {
   onCreateProject: () => void
 }
 
-export function AppSidebar({ onCreateProject }: AppSidebarProps) {
+export function AppSidebar() {
   const pathname = usePathname()
   const user = useUser()
 
@@ -39,20 +39,10 @@ export function AppSidebar({ onCreateProject }: AppSidebarProps) {
       icon: TestTube,
     },
     {
-      title: "Community",
-      url: "/community",
-      icon: Users,
-    },
-    {
       title: "Projects",
-      url: "/projects",
+      url: "/project",
       icon: FolderOpen,
       hasAction: true,
-    },
-    {
-      title: "Feedback",
-      url: "/feedback",
-      icon: MessageSquare,
     },
   ]
 
@@ -99,21 +89,21 @@ export function AppSidebar({ onCreateProject }: AppSidebarProps) {
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                  {item.hasAction && (
+                  {/* {item.hasAction && (
                     <SidebarMenuAction
                       onClick={onCreateProject}
                       className={cn("transition-opacity", isProjectsHovered ? "opacity-100" : "opacity-0")}
                     >
                       <Plus className="w-4 h-4" />
                     </SidebarMenuAction>
-                  )}
+                  )} */}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
+        {/* <SidebarGroup>
           <SidebarGroupLabel>Projects</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -135,9 +125,9 @@ export function AppSidebar({ onCreateProject }: AppSidebarProps) {
               <ChevronDown className="w-3 h-3 ml-auto" />
             </Button>
           </div>
-        </SidebarGroup>
+        </SidebarGroup> */}
 
-        <SidebarGroup>
+        {/* <SidebarGroup>
           <SidebarGroupLabel>Recent features</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -159,7 +149,7 @@ export function AppSidebar({ onCreateProject }: AppSidebarProps) {
               <ChevronDown className="w-3 h-3 ml-auto" />
             </Button>
           </div>
-        </SidebarGroup>
+        </SidebarGroup> */}
       </SidebarContent>
 
       <SidebarFooter className="p-4">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,13 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
+import { createProject } from "@/lib/action/project"
 
 interface CreateProjectModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  user: any
 }
 
-export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalProps) {
+export function CreateProjectModal({ open, onOpenChange, user }: CreateProjectModalProps) {
   const [projectName, setProjectName] = useState("")
   const [description, setDescription] = useState("")
   const [checklistLevel, setChecklistLevel] = useState("High")
@@ -36,6 +38,61 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
       [type]: checked,
     }))
   }
+
+  const handleCreateProject = useCallback(async () => {
+    try {
+
+      console.log('data', projectName,
+        description,
+        {
+          checkList: {
+            language: "en",
+            level: checklistLevel,
+          },
+          testCase: {
+            language: "en",
+            // step_detail_level: "low",
+            testing_types: {
+              include_header_and_footer: testingTypes.uiux,
+              ui_testing: testingTypes.integration,
+              security_testing: testingTypes.security,
+              performance_testing: testingTypes.performance,
+              accessibility_testing: testingTypes.accessibility,
+              data_validation_testing: testingTypes.dataValidation,
+            }
+          }
+        },
+        user?.id)
+
+      const response = await createProject(
+        projectName,
+        description,
+        {
+          checkList: {
+            language: "en",
+            level: checklistLevel,
+          },
+          testCase: {
+            language: "en",
+            // step_detail_level: "low",
+            testing_types: {
+              include_header_and_footer: testingTypes.uiux,
+              ui_testing: testingTypes.integration,
+              security_testing: testingTypes.security,
+              performance_testing: testingTypes.performance,
+              accessibility_testing: testingTypes.accessibility,
+              data_validation_testing: testingTypes.dataValidation,
+            }
+          }
+        },
+        user?.id
+      );
+
+      console.log('Project created:', response)
+    } catch (error: any) {
+      console.log("Error creating project:", error?.message)
+    }
+  }, [projectName, description, testingTypes, user?.id])
 
   const priorityLevels = [
     {
@@ -66,9 +123,6 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             Create a new project
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-              <X className="w-4 h-4" />
-            </Button>
           </DialogTitle>
         </DialogHeader>
 
@@ -211,7 +265,10 @@ export function CreateProjectModal({ open, onOpenChange }: CreateProjectModalPro
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button disabled={!projectName.trim()}>Create Project</Button>
+            <Button
+              disabled={!projectName.trim()}
+              onClick={handleCreateProject}
+            >Create Project</Button>
           </div>
         </div>
       </DialogContent>

@@ -36,7 +36,7 @@ export default function ProjectsPage() {
       } catch (error) {
         console.error("Failed to fetch projects:", error)
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 

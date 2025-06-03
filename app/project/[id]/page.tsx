@@ -15,6 +15,7 @@ import { getProject } from "@/lib/action/project"
 // import type { Project, Conversation } from "@/lib/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { generateTestCases } from "@/lib/ai/generate-test-case"
+import { generateTestCasesGemini } from "@/lib/ai/generate-gemini-test-case"
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -102,7 +103,7 @@ export default function ProjectDetailPage() {
     try {
       setIsGenerating(true)
 
-      const response = await generateTestCases({
+      const response = await generateTestCasesGemini({
         checklist: requirements,
         projectSettings: project?.settings || {},
       });

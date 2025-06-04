@@ -42,10 +42,26 @@ export async function createCheckList(
     const supabase = createClient()
     const { data, error } = await supabase
         .from("check_list")
-        .insert([{ 
-            priority, category, original_number: originalNumber, details, test_suite_id: testSuiteId }])
+        .insert([{
+            priority, category, original_number: originalNumber, details, test_suite_id: testSuiteId
+        }])
         .select("*")
         .single()
+
+    if (error) {
+        console.error("Error creating checklist:", error)
+        throw error
+    }
+
+    return data
+}
+
+export async function createCheckLists(checkListData: any) {
+    const supabase = createClient()
+    const { data, error } = await supabase
+        .from("check_list")
+        .upsert(checkListData)
+        .select("*")
 
     if (error) {
         console.error("Error creating checklist:", error)
@@ -65,8 +81,9 @@ export async function updateCheckList(
     const supabase = createClient()
     const { data, error } = await supabase
         .from("check_list")
-        .update({ 
-            priority, category, original_number: originalNumber, details })
+        .update({
+            priority, category, original_number: originalNumber, details
+        })
         .eq("id", checkListId)
         .select("*")
         .single()

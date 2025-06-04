@@ -58,7 +58,11 @@ export async function generateTestCasesGemini({ checklist, projectSettings }: {
             Each object within the data array should have the following keys:
             priority: A string extracted from within the [[...]] brackets (e.g., "C", "H", "M", "L").
             number: An integer representing the sequential number following the priority and before the period.
-            content: A string containing the text of the test item, starting from the text after the number and period.`;
+            content: A string containing the text of the test item, starting from the text after the number and period.
+            
+            Your response MUST be a valid JSON array [].
+            Each element in the array should be an object {} representing a category and its subcategories. This object should have the following keys
+            `;
 
     const requestPayload = {
         contents: [
@@ -77,8 +81,62 @@ export async function generateTestCasesGemini({ checklist, projectSettings }: {
         console.log("Sending request to Gemini API with payload:", JSON.stringify(requestPayload, null, 2));
         const result = await model.generateContent(requestPayload); // Truyền trực tiếp đối tượng request
         const response = result.response;
+
+        console.log('response:', response);
+
         const text = response.text();
-        console.log("Response from Gemini API:", text);
+
+        const jsonText = text.replace(/^```json\n/, "").replace(/\n```$/, "");
+
+        // Bước 2: Parse string thành array of objects
+        let resultArray;
+        try {
+            resultArray = JSON.parse(jsonText);
+            console.log(resultArray);
+        } catch (err) {
+            console.error("JSON parse error:", err);
+        }
+
+        return resultArray;
+                // console.log("Response from Gemini API:", JSON.parse(text));
+
+        // const jsonMatch = text.match(/```(?:json)?\s*(\[.*\])\s*```/m) || 
+        //                      text.match(/(\[.*\])/m);
+
+        //                      console.log('jsonMatch:', jsonMatch);
+
+        // if (jsonMatch) {
+        //     const extractedJson = jsonMatch[1];
+        //     const parsedResponse = JSON.parse(extractedJson);
+        //     console.log("Extracted and parsed JSON response:", parsedResponse);
+        //     return parsedResponse;
+        // } else {
+        //     console.error("Could not extract valid JSON from response:", text);
+        //     return;
+        // }
+
+        // try {
+        //     // First, try to parse directly
+        //     const parsedResponse = JSON.parse(text);
+        //     console.log("Parsed JSON response:", parsedResponse);
+        //     return parsedResponse;
+        // } catch (parseError) {
+        //     console.warn("Direct JSON parsing failed, attempting to extract JSON...");
+
+        //     // Try to extract JSON from markdown code blocks or other formatting
+        //     const jsonMatch = text.match(/```(?:json)?\s*(\[.*\])\s*```/m) || 
+        //                      text.match(/(\[.*\])/m);
+
+        //     if (jsonMatch) {
+        //         const extractedJson = jsonMatch[1];
+        //         const parsedResponse = JSON.parse(extractedJson);
+        //         console.log("Extracted and parsed JSON response:", parsedResponse);
+        //         return parsedResponse;
+        //     } else {
+        //         console.error("Could not extract valid JSON from response:", text);
+        //         return;
+        //     }
+        // }
     } catch (error) {
         console.error("Error generating content:", error);
     }

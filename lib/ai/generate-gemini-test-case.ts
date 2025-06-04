@@ -23,26 +23,42 @@ export async function generateTestCasesGemini({ checklist, projectSettings }: {
     }
 
 
-    const modelName = "gemini-1.5-flash-latest"; // Thay thế bằng model chính xác bạn muốn dùng
-    console.log(`Using model: ${modelName}`);
+    const modelName = "gemini-2.5-flash-preview-04-17"; // Thay thế bằng model chính xác bạn muốn dùng
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: modelName });
     const prompt = `
             You are an expert QA/QC professional in software testing. Your task is to analyze user requirements and create structured test checklists or test cases.
             Based on the available information, you will: Analyze the feature details provided by the user Identify necessary test cases, paying special attention to project-specific characteristics Organize the checklist according to user flow from start to finish, or by functional group if requested Create a clear hierarchical structure Within each flow step, arrange test cases by priority (happy paths first, error cases, edge cases after) Organize the checklist following the sequential flow of user actions
+            Based on the available information, you will:
+            Analyze the feature details provided by the user
+            Identify necessary test cases, paying special attention to project-specific characteristics
+            Organize the checklist according to user flow from start to finish, or by functional group if requested
+            Create a clear hierarchical structure
+            Within each flow step, arrange test cases by priority (happy paths first, error cases, edge cases after)
+            Organize the checklist following the sequential flow of user actions
+            Project description:
             ${checklist}
             Your response MUST be on regular text format (no coding block), no explanatory text and follow:
-            No explanation text or title, just only checklist items 
-            Categories should be numbered sequentially (1, 2, 3, etc.) 
-            Subcategories within each category should be numbered using decimal notation (e.g., 1.1, 1.2, 2.1, 2.2, etc.) where the first number corresponds to the parent category 
-            Format each check item as: "[[priority]] [number]. [check item]" 
-            Individual checklist items should be numbered sequentially across all categories and subcategories (1, 2, 3, 4, etc.) regardless of which subcategory they belong to 
-            The numbering of checklist items should continue uninterrupted throughout the entire list Priority levels: 
-                [C] - Critical: Must be tested first; directly affects core functionality, security, or system stability 
-                [H] - High: Important but not critical; affects user experience or primary workflows 
-                [M] - Medium: Should be tested when possible; affects secondary functionality or edge cases 
+            No explanation text or title, just only checklist items
+            Categories should be numbered sequentially (1, 2, 3, etc.)
+            Subcategories within each category should be numbered using decimal notation (e.g., 1.1, 1.2, 2.1, 2.2, etc.) where the first number corresponds to the parent category
+            Format each check item as: "[[priority]] [number]. [check item]"
+            Individual checklist items should be numbered sequentially across all categories and subcategories (1, 2, 3, 4, etc.) regardless of which subcategory they belong to
+            The numbering of checklist items should continue uninterrupted throughout the entire list Priority levels:
+                [C] - Critical: Must be tested first; directly affects core functionality, security, or system stability
+                [H] - High: Important but not critical; affects user experience or primary workflows
+                [M] - Medium: Should be tested when possible; affects secondary functionality or edge cases
                 [L] - Low: Nice to have; cosmetic issues or rare scenarios with minimal impact
-        `;
+
+            The output should be a JSON array [].
+            Each element in the array should be an object {} representing a category and its subcategories. This object should have the following keys:
+            id: from 1,2,3 ..., category: A string representing the major category name (extracted from lines starting with N.).
+            subCategory: A string representing the subcategory name (extracted from lines starting with N.M.). Note: In the provided JSON example, the subcategory was nested directly under the category object. The array elements were grouped by category/subcategory pairs. Let's follow that structure.
+            data: An array [] of objects {}. Each object in this data array represents a single test checklist item.
+            Each object within the data array should have the following keys:
+            priority: A string extracted from within the [[...]] brackets (e.g., "C", "H", "M", "L").
+            number: An integer representing the sequential number following the priority and before the period.
+            content: A string containing the text of the test item, starting from the text after the number and period.`;
 
     const requestPayload = {
         contents: [

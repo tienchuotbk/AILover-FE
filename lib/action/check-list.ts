@@ -1,12 +1,12 @@
 import { createClient } from "@/lib/supabase/client"
 
-export async function getCheckLists(testSuiteId: string) {
+export async function getCheckLists(testSuiteId: string, versionLastest: number) {
     const supabase = createClient()
     const { data, error } = await supabase
         .from("check_list")
         .select("*")
-        .eq("test_suite_id", testSuiteId)
-        .order("created_at", { ascending: false })
+        .eq("testSuiteId", testSuiteId)
+        .eq("version", versionLastest)
 
     if (error) {
         console.error("Error fetching checklists:", error)
@@ -30,6 +30,42 @@ export async function getCheckList(checkListId: string) {
     }
 
     return data
+}
+
+export async function getVersionLastest() {
+    const supabase = createClient()
+    const { data, error } = await supabase
+        .from("check_list")
+        .select("version")
+        .order("version", { ascending: false })
+        .limit(1)
+        .maybeSingle(); // Không lỗi nếu không có dòng nào
+
+    if (error) {
+        console.error("Error fetching latest version:", error)
+        throw error;
+    }
+
+    // Nếu không có bản ghi nào => version = 1
+    const currentVersion = data?.version ?? 0;
+    return Number(currentVersion) + 1;
+}
+
+export async function getListVersion() {
+    const supabase = createClient()
+    const { data, error } = await supabase
+        .from("check_list")
+        .select("version") // lấy tất cả version
+        .order("version", { ascending: false })
+
+    if (error) {
+        console.error("Error fetching list of versions:", error)
+        throw error;
+    }
+
+    // Lọc các version duy nhất
+    const uniqueVersions = [...new Set(data.map(item => item.version))];
+    return uniqueVersions;
 }
 
 export async function createCheckList(

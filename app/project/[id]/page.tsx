@@ -15,9 +15,12 @@ import { getProject } from "@/lib/action/project"
 // import type { Project, Conversation } from "@/lib/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { generateTestCases } from "@/lib/ai/generate-test-case"
-import { generateTestCasesGemini } from "@/lib/ai/generate-gemini-test-case"
-import { createCheckLists } from "@/lib/action/check-list"
+import { generateCheckListGemini } from "@/lib/ai/generate-gemini-test-case"
+import { createCheckLists, getVersionLastest } from "@/lib/action/check-list"
 import { splitArray } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { createTestSuite } from "@/lib/action/test-suite"
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -29,6 +32,8 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true)
   const [requirements, setRequirements] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [testSuiteName, setTestSuiteName] = useState("")
+
 
   useEffect(() => {
     async function fetchData() {
@@ -98,14 +103,23 @@ export default function ProjectDetailPage() {
     //   setIsGenerating(false)
     // }
 
-    if (!requirements.trim()) {
+    if (!requirements.trim() || !testSuiteName.trim()) {
       return
     }
 
     try {
       setIsGenerating(true)
 
-      const response = await generateTestCasesGemini({
+      const testSuite = await createTestSuite(
+        testSuiteName,
+        projectId,
+        ''
+      );
+
+      console.log('testSuite', testSuite)
+
+
+      const response = await generateCheckListGemini({
         checklist: requirements,
         projectSettings: project?.settings || {},
       });
@@ -114,24 +128,60 @@ export default function ProjectDetailPage() {
 
       // Save to DB checklist and conversatio
 
-      const dataUpsert = response.map((item: any, index: number) => ({
-        category: item.category,
-        subCategory: item.subCategory,
-        data: item.data,
-        projectId: +projectId,
-      }));
+      // const dataUpsert = response.map((item: any, index: number) => ({
+      //   category: item.category,
+      //   subCategory: item.subCategory,
+      //   // data: item.data,
+      //   projectId: +projectId,
+      //   number: +item.data.number,
+      //   priority: item.data.priority,
+      //   content: item.data.content,
+      // }));
+
+      const dataUpsert: any[] = [];
+      response?.map((item: any, index: number) => {
+        item?.data?.map((data: any) => {
+          dataUpsert.push({
+            category: item.category,
+            subCategory: item.subcategory || item.subCategory,
+            testSuiteId: +testSuite.id,
+            number: +data.number,
+            priority: data.priority,
+            content: data.content,
+          });
+        })
+      });
+
+
+      console.log("Data to upsert:", dataUpsert)
+
+      const versionLastest = await getVersionLastest();
+
+      console.log('versionLastest:', versionLastest)
+
 
       const dataSplit = splitArray(dataUpsert, 5);
       for (const data of dataSplit) {
-        await createCheckLists(data);
+        let promises = [];
+        for (const item of data) {
+          promises.push(
+            createCheckLists({
+              ...item,
+              version: versionLastest,
+            })
+          );
+        }
+        // await createCheckLists(data);
+        await Promise.all(promises);
       }
 
+      router.push(`/test-suite/${testSuite.id}`)
     } catch (error) {
       console.log("Error creating checklist:", error)
     } finally {
       setIsGenerating(false)
     }
-  }, [requirements, project?.settings, projectId, router]);
+  }, [requirements, project?.settings, projectId, router, testSuiteName]);
 
   const handleConversationClick = (conversation: any) => {
     // Load conversation và redirect đến checklist result
@@ -222,6 +272,19 @@ export default function ProjectDetailPage() {
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">
+                      Name Test Suite <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      placeholder="Test Suite Name"
+                      value={testSuiteName}
+                      onChange={(e) => setTestSuiteName(e.target.value)}
+                      required
+                    />
+                  </div>
+
                   <Textarea
                     placeholder="Describe the feature requirement, user flow, expected behavior, and any specific scenarios to test..."
                     value={requirements}

@@ -9,7 +9,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
  * @returns {Promise<string | undefined>} A promise that resolves with the generated text from the Gemini API,
  * or undefined if an error occurs.
  */
-export async function generateTestCasesGemini({ checklist, projectSettings }: {
+export async function generateCheckListGemini({ checklist, projectSettings }: {
     checklist: string,
     projectSettings: any,
 }) {
@@ -82,8 +82,6 @@ export async function generateTestCasesGemini({ checklist, projectSettings }: {
         const result = await model.generateContent(requestPayload); // Truyền trực tiếp đối tượng request
         const response = result.response;
 
-        console.log('response:', response);
-
         const text = response.text();
 
         const jsonText = text.replace(/^```json\n/, "").replace(/\n```$/, "");
@@ -92,7 +90,6 @@ export async function generateTestCasesGemini({ checklist, projectSettings }: {
         let resultArray;
         try {
             resultArray = JSON.parse(jsonText);
-            console.log(resultArray);
         } catch (err) {
             console.error("JSON parse error:", err);
         }

@@ -1,28 +1,21 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from "@/components/ui/card"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
-import { MoreHorizontal, MessageSquare, Loader2, ArrowLeft } from "lucide-react"
-import { getProject } from "@/lib/action/project"
+import { Button } from "@/components/ui/button"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { FileSpreadsheet, Loader2 } from "lucide-react"
+import { useParams, useRouter } from "next/navigation"
+import { useCallback, useEffect, useState } from "react"
 // import { getProjectConversations, createConversation } from "@/lib/actions/conversations"
 // import { generateChecklist } from "@/lib/actions/checklist"
 // import { toast } from "@/hooks/use-toast"
 // import type { Project, Conversation } from "@/lib/types";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { generateTestCases } from "@/lib/ai/generate-test-case"
-import { generateCheckListGemini } from "@/lib/ai/generate-gemini-test-case"
-import { createCheckLists, getCheckLists, getListVersion, getVersionLastest } from "@/lib/action/check-list"
-import { splitArray } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { createTestSuite } from "@/lib/action/test-suite"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getCheckLists, getListVersion, getVersionLastest } from "@/lib/action/check-list"
+import { formatChecklistToMarkdown } from "@/lib/utils"
+import { generateTestCases } from "@/lib/ai/generate-gemini-test-case"
 
 
 export default function ProjectDetailPage() {
@@ -35,12 +28,9 @@ export default function ProjectDetailPage() {
     const [currentVersion, setCurrentVersion] = useState<number>(1);
     const [activeTab, setActiveTab] = useState("checklist")
 
-    const [project, setProject] = useState<any | null>(null)
-    const [conversations, setConversations] = useState<any[]>([])
+    const [promptForTestCase, setPromptForTestCase] = useState<string[]>([]);
     const [loading, setLoading] = useState(true)
-    const [requirements, setRequirements] = useState("")
-    const [isGenerating, setIsGenerating] = useState(false)
-    const [testSuiteName, setTestSuiteName] = useState("")
+    const [testCase, setTestCase] = useState<any[]>([])
 
 
     useEffect(() => {
@@ -57,6 +47,10 @@ export default function ProjectDetailPage() {
                 setListVersion(listVersion)
 
                 setCurrentVersion(listVersion[0])
+
+
+                const checkListForTestCase = formatChecklistToMarkdown(checkListData);
+                setPromptForTestCase(checkListForTestCase)
             } catch (error) {
                 console.error("Failed to fetch project data:", error)
                 router.push("/project")
@@ -82,6 +76,25 @@ export default function ProjectDetailPage() {
         }
     }, [testSuiteId])
 
+    const handleGenerateTestCases = useCallback(async () => {
+        try {
+            const testCases = [];
+
+            for (const prompt of promptForTestCase) {
+                const response = await generateTestCases(prompt);
+
+                console.log("Generated test case:", response);
+                testCases.push(response);
+                break;
+            }
+
+            setTestCase(testCases);
+        } catch (error) {
+
+        }
+    }, [promptForTestCase])
+
+
     if (loading) {
         return (
             <SidebarProvider>
@@ -98,7 +111,8 @@ export default function ProjectDetailPage() {
     }
 
     console.log("checkList:", checkList)
-    console.log("listVersion:", listVersion)
+    console.log('promptForTestCase:', promptForTestCase)
+    console.log('testCase:', testCase)
 
     if (!checkList || checkList.length === 0) {
         return (
@@ -163,6 +177,57 @@ export default function ProjectDetailPage() {
                             </div>
                         </div>
                     </div>
+
+                    <TabsContent value="checklist" className="flex-1 overflow-hidden flex">
+                        <div className="flex-1 overflow-auto p-4">
+                            <div className="mb-4 flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <Badge className="bg-gray-200 text-gray-800 hover:bg-gray-200">
+                                        Checks
+                                    </Badge>
+                                    <Button size="sm" className="bg-blue-500 hover:bg-blue-600"
+                                        onClick={handleGenerateTestCases}
+                                    >
+                                        Generate testcases
+                                    </Button>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Button variant="ghost" size="sm" onClick={() => { }}>
+                                        Collapse All
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={() => { }}>
+                                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                        Export to Excel
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <div className="flex items-center space-x-2 mb-2">
+                                    <span className="text-sm font-medium">Priority:</span>
+                                    <div className="flex items-center space-x-2">
+                                        <div className="flex items-center">
+                                            <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span>
+                                            <span className="text-sm">Critical</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <span className="inline-block w-3 h-3 rounded-full bg-orange-500 mr-1"></span>
+                                            <span className="text-sm">High</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span>
+                                            <span className="text-sm">Medium</span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <span className="inline-block w-3 h-3 rounded-full bg-blue-500 mr-1"></span>
+                                            <span className="text-sm">Low</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </TabsContent>
                 </Tabs>
             </SidebarInset>
         </SidebarProvider>

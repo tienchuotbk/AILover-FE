@@ -151,6 +151,7 @@ export async function generateTestCases(checkList: any) {
             [M] - Medium: Should be tested when possible; affects secondary functionality or edge cases
             [L] - Low: Nice to have; cosmetic issues or rare scenarios with minimal impact
         - Checklist-ID is the ID of the checklist item that this test case is related to
+        - Step must be array of objects, each object should have "action", "expected", "testData" keys
 
         Checklist:
         ${checkList}

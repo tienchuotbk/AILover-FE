@@ -33,7 +33,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EditTestCaseModal } from "@/components/edit-test-case-modal"
 import { GenerateTestCaseModal } from "@/components/generate-test-case-modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { createCheckLists, getCheckLists, getListVersion, getVersionLastest } from "@/lib/action/check-list"
+import { createCheckLists, deleteCheckList, getCheckLists, getListVersion, getVersionLastest, updateCheckList } from "@/lib/action/check-list"
 import { formatChecklistToMarkdown, splitArray } from "@/lib/utils"
 import { generateCheckListGemini, generateTestCases } from "@/lib/ai/generate-gemini-test-case"
 import { getTestCases } from "@/lib/action/test-case"
@@ -106,6 +106,7 @@ export default function ChecklistResultPage() {
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [testCase, setTestcase] = useState([]);
+  const [isUpdateCheckList, setIsUpdateCheckList] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -157,7 +158,7 @@ export default function ChecklistResultPage() {
       }
     }
     fetchData();
-  }, [router, isGenerating]);
+  }, [router, isGenerating, isUpdateCheckList]);
 
   useEffect(() => {
     async function fetchTestSuiteData() {
@@ -1000,38 +1001,20 @@ export default function ChecklistResultPage() {
     setIsEditModalOpen(true)
   }
 
-  const handleSaveTestCase = (updatedTestCase: any) => {
-    setChecklistItems((prev) => prev.map((item) => (item.id === updatedTestCase.id ? updatedTestCase : item)))
-
-    // Update categories to reflect the change
-    setCategories((prev) =>
-      prev.map((category) => ({
-        ...category,
-        items: category.items.map((item) => (item.id === updatedTestCase.id ? updatedTestCase : item)),
-      })),
-    )
-
-    toast({
-      title: "Test case updated",
-      description: "Test case has been successfully updated",
-    })
+  const handleSaveTestCase = async (updatedTestCase: any) => {
+    setIsUpdateCheckList(true);
+    await updateCheckList(updatedTestCase.id, {
+      content: updatedTestCase.content,
+      priority: updatedTestCase.priority
+    });
+    setIsUpdateCheckList(false);
   }
 
-  const handleDeleteTestCase = (testCaseId: string) => {
-    setChecklistItems((prev) => prev.filter((item) => item.id !== testCaseId))
+  const handleDeleteTestCase = async (testCaseId: string) => {
+    setIsUpdateCheckList(true);
+    await deleteCheckList(testCaseId);
 
-    // Update categories to remove the item
-    setCategories((prev) =>
-      prev.map((category) => ({
-        ...category,
-        items: category.items.filter((item) => item.id !== testCaseId),
-      })),
-    )
-
-    toast({
-      title: "Test case deleted",
-      description: "Test case has been successfully deleted",
-    })
+    setIsUpdateCheckList(false);
   }
 
   const handleGenerateTestCases = async (settings: any) => {
@@ -1447,21 +1430,7 @@ export default function ChecklistResultPage() {
                     >
                       History
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setRightPanelView("changes")}
-                      className={`flex-1 rounded-none border-b-2 ${rightPanelView === "changes"
-                        ? "border-blue-500 text-blue-600 bg-blue-50"
-                        : "border-transparent text-gray-600"
-                        }`}
-                    >
-                      Changes
-                    </Button>
                   </div>
-
-
-
 
                   {rightPanelView === "history" && (
                     <div className="space-y-3">

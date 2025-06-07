@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,20 +22,24 @@ interface EditTestCaseModalProps {
 export function EditTestCaseModal({ open, onOpenChange, testCase, onSave }: EditTestCaseModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
+    id: testCase?.id || "",
     title: testCase?.title || "",
-    description: testCase?.description || "",
-    priority: testCase?.priority || "Medium",
+    description: testCase?.content || "",
+    priority: testCase?.priority || "M",
     category: testCase?.category || "",
     mainCategory: testCase?.mainCategory || "",
     subCategory: testCase?.subCategory || "",
   })
 
+  console.log('testCase', testCase)
+
   // Update form data when testCase changes
-  useState(() => {
+  useEffect(() => {
     if (testCase) {
       setFormData({
+        id: testCase.id,
         title: testCase.title,
-        description: testCase.description || "",
+        description: testCase.content || "",
         priority: testCase.priority,
         category: testCase.category,
         mainCategory: testCase.mainCategory || "",
@@ -49,52 +53,29 @@ export function EditTestCaseModal({ open, onOpenChange, testCase, onSave }: Edit
 
     if (!testCase) return
 
-    if (!formData.title.trim()) {
-      toast({
-        title: "Lỗi",
-        description: "Tiêu đề test case là bắt buộc",
-        variant: "destructive",
-      })
-      return
-    }
-
     try {
       setIsLoading(true)
 
       const updatedTestCase: any = {
-        ...testCase,
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        priority: formData.priority as "Critical" | "High" | "Medium" | "Low",
-        category: formData.category.trim(),
-        mainCategory: formData.mainCategory.trim(),
-        subCategory: formData.subCategory.trim(),
+        id: formData.id,
+        content: formData.description.trim(),
+        priority: formData.priority as "C" | "H" | "M" | "L",
       }
 
       onSave(updatedTestCase)
 
-      toast({
-        title: "Thành công",
-        description: "Test case đã được cập nhật",
-      })
-
       onOpenChange(false)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể cập nhật test case. Vui lòng thử lại.",
-        variant: "destructive",
-      })
     } finally {
       setIsLoading(false)
     }
   }
 
   const priorityOptions = [
-    { value: "Critical", label: "Critical", color: "bg-red-500" },
-    { value: "High", label: "High", color: "bg-orange-500" },
-    { value: "Medium", label: "Medium", color: "bg-green-500" },
-    { value: "Low", label: "Low", color: "bg-blue-500" },
+    { value: "C", label: "Critical", color: "bg-red-500" },
+    { value: "H", label: "High", color: "bg-orange-500" },
+    { value: "M", label: "Medium", color: "bg-green-500" },
+    { value: "L", label: "Low", color: "bg-blue-500" },
   ]
 
   return (
@@ -102,34 +83,20 @@ export function EditTestCaseModal({ open, onOpenChange, testCase, onSave }: Edit
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            Edit Test Case
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+            Edit Check List
+            {/* <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
               <X className="w-4 h-4" />
-            </Button>
+            </Button> */}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">
-              Title <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="title"
-              placeholder="Enter test case title"
-              value={formData.title}
-              onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-              required
-            />
-          </div>
-
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Content</Label>
             <Textarea
               id="description"
-              placeholder="Enter test case description"
+              placeholder="Enter check list description"
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               className="min-h-[80px]"
@@ -159,8 +126,7 @@ export function EditTestCaseModal({ open, onOpenChange, testCase, onSave }: Edit
             </Select>
           </div>
 
-          {/* Category */}
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
             <Input
               id="category"
@@ -170,7 +136,6 @@ export function EditTestCaseModal({ open, onOpenChange, testCase, onSave }: Edit
             />
           </div>
 
-          {/* Main Category */}
           <div className="space-y-2">
             <Label htmlFor="mainCategory">Main Category</Label>
             <Input
@@ -181,7 +146,6 @@ export function EditTestCaseModal({ open, onOpenChange, testCase, onSave }: Edit
             />
           </div>
 
-          {/* Sub Category */}
           <div className="space-y-2">
             <Label htmlFor="subCategory">Sub Category</Label>
             <Input
@@ -190,14 +154,14 @@ export function EditTestCaseModal({ open, onOpenChange, testCase, onSave }: Edit
               value={formData.subCategory}
               onChange={(e) => setFormData((prev) => ({ ...prev, subCategory: e.target.value }))}
             />
-          </div>
+          </div> */}
 
           {/* Actions */}
           <div className="flex justify-end space-x-3 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || !formData.title.trim()}>
+            <Button type="submit" disabled={isLoading || !formData.description.trim()}>
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

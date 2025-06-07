@@ -99,7 +99,7 @@ export function AppSidebar() {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">GT</span>
           </div>
-          <span className="font-bold text-xl">GenTest</span>
+          <span className="font-bold text-xl" onClick={() => redirect("/dashboard")}>GenTest</span>
         </div>
       </SidebarHeader>
 

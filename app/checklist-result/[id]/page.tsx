@@ -33,9 +33,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EditTestCaseModal } from "@/components/edit-test-case-modal"
 import { GenerateTestCaseModal } from "@/components/generate-test-case-modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getCheckLists, getListVersion, getVersionLastest } from "@/lib/action/check-list"
-import { formatChecklistToMarkdown } from "@/lib/utils"
-import { generateTestCases } from "@/lib/ai/generate-gemini-test-case"
+import { createCheckLists, getCheckLists, getListVersion, getVersionLastest } from "@/lib/action/check-list"
+import { formatChecklistToMarkdown, splitArray } from "@/lib/utils"
+import { generateCheckListGemini, generateTestCases } from "@/lib/ai/generate-gemini-test-case"
 import { getTestCases } from "@/lib/action/test-case"
 import { exportTestCase, exportTestReport } from "@/lib/lark"
 import { generateTestReport } from "@/lib/ai/generate-gemini-test-case"
@@ -88,76 +88,22 @@ export default function ChecklistResultPage() {
   const [promptForTestCase, setPromptForTestCase] = useState<string[]>([]);
   const router = useRouter()
 
+  const [isGenerating, setIsGenerating] = useState(false)
   const [testCase, setTestcase] = useState([]);
-
-  console.log('testCase', testCase)
 
   useEffect(() => {
     async function fetchData() {
-      // Lấy checklist từ sessionStorage
-      // const storedChecklist = sessionStorage.getItem("generatedChecklist")
-      // console.log('storedChecklist', storedChecklist)
-      // if (storedChecklist && storedChecklist.length) {
-      //   try {
-      //     const items = JSON.parse(storedChecklist) as any[]
-      //     setChecklistItems(items)
-
-      //     // Group items by category
-      //     const categoryMap: Record<string, any> = {}
-
-      //     items.forEach((item) => {
-      //       const mainCategory = item.category || "General"
-      //       const subCategory = item.subCategory || "Functionality"
-
-      //       const categoryKey = `${mainCategory}:${subCategory}`
-
-      //       if (!categoryMap[categoryKey]) {
-      //         categoryMap[categoryKey] = {
-      //           id: categoryKey,
-      //           mainCategory,
-      //           subCategory,
-      //           items: [],
-      //         }
-      //       }
-
-      //       categoryMap[categoryKey].items.push(item)
-      //     })
-
-      //     const sortedCategories = Object.values(categoryMap).sort(
-      //       (a, b) => a.category.localeCompare(b.category) || a.subCategory.localeCompare(b.subCategory),
-      //     )
-
-      //     setCategories(sortedCategories)
-
-      //     // Initialize all categories as expanded
-      //     const expanded: Record<string, boolean> = {}
-      //     sortedCategories.forEach((category) => {
-      //       expanded[category.id] = true
-      //     })
-      //     setExpandedCategories(expanded)
-      //   } catch (error) {
-      //     console.error("Failed to parse checklist:", error)
-      //     router.push("/dashboard")
-      //   }
-      // } else {
-      // For demo purposes, create mock data
-      // createMockData()
       const versionLastest = await getVersionLastest();
-      console.log('versionLastest', versionLastest)
       const [checkListData, listVersion] = await Promise.all([
-        getCheckLists(testSuiteId),
+        getCheckLists(testSuiteId, versionLastest - 1),
         getListVersion(),
       ])
-      console.log('checkListData', checkListData)
       setCheckList(checkListData)
       setListVersion(listVersion)
-
       setCurrentVersion(listVersion[0])
-
 
       const checkListForTestCase = formatChecklistToMarkdown(checkListData);
       setPromptForTestCase(checkListForTestCase)
-
 
       // Group items by category
       const categoryMap: Record<string, any> = {}
@@ -165,7 +111,6 @@ export default function ChecklistResultPage() {
       checkListData.forEach((item) => {
         const mainCategory = item.category || "General"
         const subCategory = item.subCategory || "Functionality"
-
         const categoryKey = `${mainCategory}:${subCategory}`
 
         if (!categoryMap[categoryKey]) {
@@ -180,15 +125,7 @@ export default function ChecklistResultPage() {
         categoryMap[categoryKey].items.push(item)
       })
 
-      console.log('categoryMap', categoryMap)
-      // const sortedCategories = Object.values(categoryMap).sort(
-      //   (a, b) => a.category.localeCompare(b.category) || a.subCategory.localeCompare(b.subCategory),
-      // );
-
       const categoryObject = Object.values(categoryMap);
-
-      // console.log('sortedCategories', Object.values(categoryMap))
-
       setCategories(Object.values(categoryMap));
 
       // Initialize all categories as expanded
@@ -198,13 +135,13 @@ export default function ChecklistResultPage() {
       })
       setExpandedCategories(expanded);
 
-      const tests = await getTestCases(testSuiteId);
+      const tests: any = await getTestCases(testSuiteId);
       if (tests) {
         setTestcase(tests);
       }
     }
     fetchData();
-  }, [router]);
+  }, [router, isGenerating]);
 
   const getStatusStyle = (status: TestCaseStatus) => {
     switch (status) {
@@ -222,7 +159,7 @@ export default function ChecklistResultPage() {
   const handleStatusChange = () => { }
 
   const combineStatus: any[] = useMemo(() => {
-    let temp = [];
+    let temp: any = [];
     testCase?.map((test: any) => {
       test?.steps?.map((step: any, index: number) => {
         temp.push({
@@ -805,13 +742,13 @@ export default function ChecklistResultPage() {
     const category = categories.find((c) => c.id === categoryId)
     if (!category) return
 
-    const itemIds = category.items.map((item) => item.id)
+    const itemIds = category.items.map((item: any) => item.id)
 
     setChecklistItems((prev) => prev.map((item) => (itemIds.includes(item.id) ? { ...item, completed: true } : item)))
 
     setCategories((prev) =>
       prev.map((cat) =>
-        cat.id === categoryId ? { ...cat, items: cat.items.map((item) => ({ ...item, completed: true })) } : cat,
+        cat.id === categoryId ? { ...cat, items: cat.items.map((item: any) => ({ ...item, completed: true })) } : cat,
       ),
     )
 
@@ -978,7 +915,7 @@ export default function ChecklistResultPage() {
   const getCompletedChecksByCategory = (mainCategory: string) => {
     return categories
       .filter((category) => category.category === mainCategory)
-      .reduce((total, category) => total + category.items.filter((item) => item.completed).length, 0)
+      .reduce((total, category) => total + category.items.filter((item: any) => item.completed).length, 0)
   }
 
   const getTotalChecksBySubCategory = (categoryId: string) => {
@@ -988,7 +925,7 @@ export default function ChecklistResultPage() {
 
   const getCompletedChecksBySubCategory = (categoryId: string) => {
     const category = categories.find((c) => c.id === categoryId)
-    return category ? category.items.filter((item) => item.completed).length : 0
+    return category ? category.items.filter((item: any) => item.completed).length : 0
   }
 
   const mainCategories = useMemo(() => {
@@ -1123,15 +1060,88 @@ export default function ChecklistResultPage() {
     setTestcase(data);
   }
 
-  const handleSendRequirement = () => {
+  const handleSendRequirement = useCallback(async () => {
     if (!requirementInput.trim()) return
 
-    toast({
-      title: "Requirement sent",
-      description: "Your requirement has been sent to AI for processing",
-    })
+    setIsGenerating(true)
 
-    setRequirementInput("")
+    console.log('Generating new checklist with requirement:', requirementInput);
+    const response = await generateCheckListGemini({
+      document: '',
+      checklist: requirementInput,
+      projectSettings: {},
+    });
+
+    const dataUpsert: any[] = [];
+    response?.map((item: any, index: number) => {
+      item?.data?.map((data: any) => {
+        dataUpsert.push({
+          category: item.category,
+          subCategory: item.subcategory || item.subCategory,
+          testSuiteId: +testSuiteId,
+          number: +data.number,
+          priority: data.priority,
+          content: data.content,
+        });
+      })
+    });
+
+    const versionLastest = await getVersionLastest();
+    const dataSplit = splitArray(dataUpsert, 5);
+    for (const data of dataSplit) {
+      let promises = [];
+      for (const item of data) {
+        promises.push(
+          createCheckLists({
+            ...item,
+            version: versionLastest,
+          })
+        );
+      }
+      await Promise.allSettled(promises);
+    }
+
+    console.log("Generated checklist:", response)
+    setIsGenerating(false)
+
+    // setRequirementInput("")
+  }, [requirementInput]);
+
+  const handleChangeVersion = async (version: number) => {
+    const response = await getCheckLists(testSuiteId, version);
+    if (response) {
+      setCurrentVersion(version);
+      setCheckList(response);
+
+      // Group items by category
+      const categoryMap: Record<string, any> = {}
+
+      response.forEach((item) => {
+        const mainCategory = item.category || "General"
+        const subCategory = item.subCategory || "Functionality"
+        const categoryKey = `${mainCategory}:${subCategory}`
+
+        if (!categoryMap[categoryKey]) {
+          categoryMap[categoryKey] = {
+            id: categoryKey,
+            mainCategory,
+            subCategory,
+            items: [],
+          }
+        }
+
+        categoryMap[categoryKey].items.push(item)
+      })
+
+      const categoryObject = Object.values(categoryMap);
+      setCategories(Object.values(categoryMap));
+
+      const expanded: Record<string, boolean> = {}
+      categoryObject.forEach((category) => {
+        expanded[category.id] = true
+      })
+      setExpandedCategories(expanded);
+    }
   }
 
   const handleImageUpload = () => {
@@ -1144,9 +1154,6 @@ export default function ChecklistResultPage() {
 
   const handleExportTestCase = useCallback(async () => {
     try {
-
-
-
 
       // Create file sheet on lark
       const { data } = await exportTestCase(checkList);
@@ -1175,6 +1182,8 @@ export default function ChecklistResultPage() {
       }
     }
   }, [checkList]);
+
+  console.log('checkList', checkList)
 
   return (
     <SidebarProvider>
@@ -1216,11 +1225,6 @@ export default function ChecklistResultPage() {
                     </TabsTrigger>
                   </TabsList>
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm">Version 3</span>
-                  <ChevronDown className="w-4 h-4" />
-                </div>
               </div>
             </div>
 
@@ -1242,10 +1246,6 @@ export default function ChecklistResultPage() {
                   <div className="flex items-center space-x-2">
                     <Button variant="ghost" size="sm" onClick={toggleCollapseExpand}>
                       {Object.values(expandedCategories).some((expanded) => !expanded) ? "Expand All" : "Collapse All"}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleExportToExcel}>
-                      <FileSpreadsheet className="w-4 h-4 mr-2" />
-                      Export to Excel
                     </Button>
                   </div>
                 </div>
@@ -1377,7 +1377,7 @@ export default function ChecklistResultPage() {
 
                               {isExpanded && (
                                 <div className="pl-14 pr-4 pb-3 space-y-3">
-                                  {subCategory.items?.map((item, itemIndex) => (
+                                  {subCategory.items?.map((item: any, itemIndex: number) => (
                                     <div
                                       key={item.id}
                                       className="flex items-start group hover:bg-gray-50 rounded-md p-2 -m-2 transition-colors"
@@ -1469,9 +1469,12 @@ export default function ChecklistResultPage() {
                     </Button>
                   </div>
 
+
+
+
                   {rightPanelView === "history" && (
                     <div className="space-y-3">
-                      <div className="border rounded-lg p-3">
+                      {/* <div className="border rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <ChevronRight className="w-4 h-4 mr-1" />
@@ -1511,7 +1514,26 @@ export default function ChecklistResultPage() {
                         </div>
                         <p className="text-xs text-gray-500 mt-1">Initial checklist generation</p>
                         <p className="text-xs text-gray-400 mt-1">2:15 PM 23/05/2025</p>
-                      </div>
+                      </div> */}
+
+                      {listVersion?.map((version: any) => (
+                        <div key={version} className="border rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <span className="text-sm font-medium">Version {version} {currentVersion === version ? "(Current version)" : ""}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-blue-500"
+                              onClick={() => handleChangeVersion(Number(version))}
+                            >
+                              View
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
 
                       {/* Requirement input section */}
                       <div className="border-t pt-4 mt-4">

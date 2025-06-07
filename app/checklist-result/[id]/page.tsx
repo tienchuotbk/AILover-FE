@@ -40,6 +40,7 @@ import { getTestCases } from "@/lib/action/test-case"
 import { exportTestCase, exportTestReport } from "@/lib/lark"
 import { generateTestReport } from "@/lib/ai/generate-gemini-test-case"
 import { Tooltip } from "@/components/ui/tooltip"
+import { getTestSuite } from "@/lib/action/test-suite"
 
 export enum TestCaseStatus {
   PENDING = 'Pending',
@@ -89,7 +90,7 @@ export default function ChecklistResultPage() {
   const [checklistItems, setChecklistItems] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState("checklist")
-  const [projectTitle, setProjectTitle] = useState("E-commerce Website")
+  const [testSuiteTitle, setTestSuiteTitle] = useState("Test suite")
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [editingTestCase, setEditingTestCase] = useState<any | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -157,6 +158,22 @@ export default function ChecklistResultPage() {
     }
     fetchData();
   }, [router, isGenerating]);
+
+  useEffect(() => {
+    async function fetchTestSuiteData() {
+      if (testSuiteId) {
+        try {
+          const data = await getTestSuite(testSuiteId);
+          if(data){
+            setTestSuiteTitle('Testsuit: '+ data.name);
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    };
+    fetchTestSuiteData();
+  }, [testSuiteId]);
 
   const getStatusStyle = (status: TestCaseStatus) => {
     switch (status) {
@@ -1170,7 +1187,7 @@ export default function ChecklistResultPage() {
               <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-xl font-semibold">{projectTitle}</h1>
+              <h1 className="text-xl font-semibold">{testSuiteTitle}</h1>
             </div>
           </div>
 
@@ -1739,7 +1756,7 @@ export default function ChecklistResultPage() {
                                 {data.sub_category}
                               </td> : null}
                               {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
-                               {getPriorityDot(PriorityByNumber[data.priority.toString() as string])} {PriorityStringByNumber[data.priority.toString()]}
+                                {getPriorityDot(PriorityByNumber[data.priority.toString() as string])} {PriorityStringByNumber[data.priority.toString()]}
                               </td> : null}
                               {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.pre_condition ?? 'N/A'}</div>

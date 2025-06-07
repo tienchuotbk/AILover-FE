@@ -306,7 +306,7 @@ async function main() {
 */
 
 export async function generateTestReport(testCases: any) {
-    const API_KEY = process.env.GEMINI_API_KE || 'AIzaSyCPtMYMP9FVh3aw8oEPd3oNjWSqoulRTFY';
+    const API_KEY = process.env.GEMINI_API_KE || 'AIzaSyC2dMwhibjoxVdPBbpkpWNrYDI9UsRPtfY';
 
     if (!API_KEY) {
         console.error("GEMINI_API_KEY is not set in environment variables.");

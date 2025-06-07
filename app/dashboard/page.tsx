@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { CreateNewProjectModal } from "@/components/create-project-modal-1"
 import { getProjects } from "@/lib/action/project"
 import { getTestSuites, getTestSuitesByProjects } from "@/lib/action/test-suite"
+import { getCheckListByTestSuiteId, getCheckLists } from "@/lib/action/check-list"
 
 export default function DashboardPage() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false)
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const [countData, setCountData] = useState<any>({
     totalProject: 0,
     totalTestSuites: 0,
+    successRate: 0,
   })
 
   const user = useUser();
@@ -76,12 +78,13 @@ export default function DashboardPage() {
       try {
         const projects = await getProjects(user?.id);
         const testSuites = await getTestSuitesByProjects(projects.map((project: any) => project.id));
-
-        console.log('projects:', projects)
+        const checkLists = await getCheckListByTestSuiteId(testSuites.map((suite: any) => suite.id));
+        const checkListCompeleted = checkLists.filter((checkList: any) => checkList.completed);
 
         setCountData({
           totalProject: projects.length || 0,
           totalTestSuites: testSuites.length || 0,
+          successRate: checkListCompeleted.length > 0 ? Math.round((checkListCompeleted.length / checkLists.length) * 100) : 0,
         })
       } catch (error) {
         console.error("Failed to fetch projects:", error)
@@ -189,7 +192,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-orange-700 mb-1">Success Rate</p>
-                    <h3 className="text-3xl font-bold text-orange-900">{stats.successRate}%</h3>
+                    <h3 className="text-3xl font-bold text-orange-900">{countData.successRate}%</h3>
                     <p className="text-xs text-orange-600 mt-1">+3% from last month</p>
                   </div>
                   <div className="p-3 bg-orange-600 rounded-full">

@@ -35,6 +35,22 @@ export async function getCheckList(checkListId: string) {
     return data
 }
 
+export async function getCheckListByTestSuiteId(testSuiteIds: string[]) {
+    const supabase = createClient()
+    const { data, error } = await supabase
+        .from("check_list")
+        .select("*")
+        .in("testSuiteId", testSuiteIds)
+
+    if (error) {
+        console.error("Error fetching checklists by test suite IDs:", error)
+        throw error
+    }
+
+    return data
+
+}
+
 export async function getVersionLastest() {
     const supabase = createClient()
     const { data, error } = await supabase

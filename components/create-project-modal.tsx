@@ -134,7 +134,7 @@ export function CreateProjectModal({ open, onOpenChange, user }: CreateProjectMo
           </div>
 
           {/* Checklist Settings */}
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <Label>Checklist Settings</Label>
             <div className="space-y-2">
               <Label htmlFor="detail-level" className="text-sm">
@@ -151,10 +151,10 @@ export function CreateProjectModal({ open, onOpenChange, user }: CreateProjectMo
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </div> */}
 
           {/* Testing Types */}
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <Label>Testing Types</Label>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -223,10 +223,10 @@ export function CreateProjectModal({ open, onOpenChange, user }: CreateProjectMo
                 />
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Priority Levels */}
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <Label>Priority Levels</Label>
             <div className="grid grid-cols-2 gap-3">
               {priorityLevels.map((priority) => (
@@ -238,7 +238,7 @@ export function CreateProjectModal({ open, onOpenChange, user }: CreateProjectMo
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Actions */}
           <div className="flex justify-end space-x-3 pt-4">

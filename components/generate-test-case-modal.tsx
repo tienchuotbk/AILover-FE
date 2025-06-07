@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { X } from "lucide-react"
+import { Loader2, X } from "lucide-react"
 
 interface GenerateTestCaseModalProps {
   open: boolean
@@ -18,14 +18,16 @@ export function GenerateTestCaseModal({ open, onOpenChange, onGenerate }: Genera
   const [idTestcase, setIdTestcase] = useState("TC")
   const [language, setLanguage] = useState("English")
   const [testDataExample, setTestDataExample] = useState("")
+  const [loading, setLoading] = useState(false);
 
   const handleGenerate = () => {
+    setLoading(true);
     onGenerate({
       idTestcase,
       language,
       testDataExample,
     })
-    onOpenChange(false)
+    // onOpenChange(false)
     // Reset form
     setIdTestcase("TC")
     setLanguage("English")
@@ -109,7 +111,13 @@ export function GenerateTestCaseModal({ open, onOpenChange, onGenerate }: Genera
             Cancel
           </Button>
           <Button onClick={handleGenerate} className="bg-blue-500 hover:bg-blue-600">
-            Save & Generate
+
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : "Save & Generate"}
           </Button>
         </div>
       </DialogContent>

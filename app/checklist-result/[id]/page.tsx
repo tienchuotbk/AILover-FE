@@ -510,16 +510,25 @@ export default function ChecklistResultPage() {
 
     // setGeneratedTestCases(mockTestCases)
     setActiveTab("testcases")
-
-
-    const data = await generateTestCases(checkList, testSuiteId);
-    if (data) {
+    try {
+      const data = await generateTestCases(checkList, testSuiteId);
+      if (data) {
+        toast({
+          title: "Test cases generated successfully",
+          description: `Generated ${data.length} test cases`,
+        })
+      }
+      setTestcase(data);
+    } catch (err) {
+      setIsGenerateModalOpen(false);
       toast({
-        title: "Test cases generated successfully",
-        description: `Generated ${data.length} test cases`,
+        title: "Failed",
+        description: `Failed to generate testcase`,
       })
+
     }
-    setTestcase(data);
+
+    setIsGenerateModalOpen(false);
   }
 
   const handleSendRequirement = useCallback(async () => {

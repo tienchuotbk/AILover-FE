@@ -122,9 +122,8 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
 
 
     const prompt = `
-        Generate test cases from the checklist (each test case will be display below each related check item), using the following format:
-        ID: $PREFIX_001
-        ChecklistId: [The id number of the initial checklist, number only]
+        Generate test cases from the checklist array (each test case will be display below each related check item), using the following format:
+        ID: $PREFIX_001 [Auto generate]
         Category: [Category Name]
         Sub-Category: [Sub-Category]
         Checklist: [Checklist Item in their own language]
@@ -140,6 +139,7 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
         TestData: [Test data or N/A if not applicable]
         )
         [Add additional steps as needed following the same format]
+        ChecklistId: [checklist.id, number only]
         Note: Replace $PREFIX with "LG-" and use sequential numbers (001, 002, 003,... format)
 
         Requirements:
@@ -150,6 +150,8 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
         Include relevant test data from the examples provided
         Expected results should be clear and verifiable
         Each test case should focus on testing one specific aspect or scenario
+        ChecklistId is the id of the item in array
+        For example, if checklist item: {id: 167, priority: '7'} then ChecklistId = 167.
 
         Note:
         - Detail priority:
@@ -157,15 +159,16 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
             [H] - High: Important but not critical; affects user experience or primary workflows
             [M] - Medium: Should be tested when possible; affects secondary functionality or edge cases
             [L] - Low: Nice to have; cosmetic issues or rare scenarios with minimal impact
-        - Checklist-ID is the ID of the checklist item that this test case is related to
         - Step must be array of objects, each object should have "action", "expected", "testData" keys
 
         Checklist:
         ${checkList}
 
-        Your response MUST be a valid JSON array [].
+        Your response MUST be a valid JSON array []. Please consider ChecklistId is a number, equal to id of item we provide.
         Each element in the array should be an object {} representing a test case. This object should have the following
     `;
+
+    console.log('Send Checklist to test', checkList);
 
     const requestPayload = {
         contents: [
@@ -235,7 +238,7 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
                 sub_category: item['Sub-Category'],
                 priority: item.Priority,
                 pre_condition: item.Precondition,
-                steps: item.Step.map((step: any) => ({
+                steps: item.Step?.map((step: any) => ({
                     step: step.Step,
                     action: step.Action,
                     expected: step.Expected,

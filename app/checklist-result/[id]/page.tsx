@@ -115,6 +115,8 @@ export default function ChecklistResultPage() {
   const [urlFile, setUrlFile] = useState<any[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  console.log('checkList', checkList)
+  console.log('testcase', testCase)
 
   useEffect(() => {
     async function fetchData() {
@@ -185,15 +187,17 @@ export default function ChecklistResultPage() {
     fetchTestSuiteData();
   }, [testSuiteId]);
 
-  useEffect(()=> {
-    async function fetchData(){
-      const tests: any = await getTestCases(testSuiteId);
-      if (tests) {
-        setTestcase(tests);
+  useEffect(() => {
+    async function fetchData() {
+      if (testSuiteId) {
+        const tests: any = await getTestCases(testSuiteId);
+        if (tests) {
+          setTestcase(tests);
+        }
       }
     }
     fetchData();
-  }, [isGenerateModalOpen])
+  }, [isGenerateModalOpen, testSuiteId])
 
   const getStatusStyle = (status: TestCaseStatus) => {
     switch (status) {

@@ -127,7 +127,7 @@ export default function ProjectDetailPage() {
           dataUpsert.push({
             category: item.category,
             subCategory: item.subcategory || item.subCategory,
-            testSuiteId: +testSuite.id,
+            testSuiteId: testSuite.id,
             number: +data.number,
             priority: data.priority,
             content: data.content,

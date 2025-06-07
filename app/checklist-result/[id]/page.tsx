@@ -171,8 +171,8 @@ export default function ChecklistResultPage() {
       if (testSuiteId) {
         try {
           const data = await getTestSuite(testSuiteId);
-          if(data){
-            setTestSuiteTitle('Testsuit: '+ data.name);
+          if (data) {
+            setTestSuiteTitle('Testsuit: ' + data.name);
           }
         } catch (e) {
           console.log(e);
@@ -468,7 +468,7 @@ export default function ChecklistResultPage() {
   // const completedChecks = categories.filter((item) => item.completed).length
   // console.log('completedChecks', categories);
 
-  const completedChecks = useMemo(()=> {
+  const completedChecks = useMemo(() => {
     let count = 0;
     categories.forEach((category) => {
       count += category.items.filter((item: any) => item.completed).length;
@@ -502,16 +502,25 @@ export default function ChecklistResultPage() {
 
     // setGeneratedTestCases(mockTestCases)
     setActiveTab("testcases")
-
-
-    const data = await generateTestCases(checkList, testSuiteId);
-    if (data) {
+    try {
+      const data = await generateTestCases(checkList, testSuiteId);
+      if (data) {
+        toast({
+          title: "Test cases generated successfully",
+          description: `Generated ${data.length} test cases`,
+        })
+      }
+      setTestcase(data);
+    } catch (err) {
+      setIsGenerateModalOpen(false);
       toast({
-        title: "Test cases generated successfully",
-        description: `Generated ${data.length} test cases`,
+        title: "Failed",
+        description: `Failed to generate testcase`,
       })
+
     }
-    setTestcase(data);
+
+    setIsGenerateModalOpen(false);
   }
 
   const handleSendRequirement = useCallback(async () => {

@@ -113,7 +113,7 @@ export default function ChecklistResultPage() {
       const versionLastest = await getVersionLastest();
       const [checkListData, listVersion] = await Promise.all([
         getCheckLists(testSuiteId, versionLastest - 1),
-        getListVersion(),
+        getListVersion(testSuiteId),
       ])
       setCheckList(checkListData)
       setListVersion(listVersion)

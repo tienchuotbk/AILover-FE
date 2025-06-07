@@ -15,6 +15,21 @@ export async function getTestSuites(projectId: string) {
     return data
 }
 
+export async function getTestSuitesByProjects(projectIds: string[]) {
+    const supabase = createClient()
+    const { data, error } = await supabase
+        .from("test_suite")
+        .select("*")
+        .in("project_id", projectIds)
+
+    if (error) {
+        console.error("Error fetching test suites by projects:", error)
+        throw error
+    }
+
+    return data
+}
+
 export async function getTestSuite(testSuiteId: string) {
     const supabase = createClient()
     const { data, error } = await supabase

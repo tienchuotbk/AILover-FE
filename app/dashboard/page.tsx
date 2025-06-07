@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation"
 import { useUser } from "@supabase/auth-helpers-react"
 import { Badge } from "@/components/ui/badge"
 import { CreateNewProjectModal } from "@/components/create-project-modal-1"
+import { getProjects } from "@/lib/action/project"
+import { getTestSuites, getTestSuitesByProjects } from "@/lib/action/test-suite"
 
 export default function DashboardPage() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false)
@@ -20,6 +22,11 @@ export default function DashboardPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [uploadedImages, setUploadedImages] = useState<File[]>([])
   const [isQuickFormOpen, setIsQuickFormOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [countData, setCountData] = useState<any>({
+    totalProject: 0,
+    totalTestSuites: 0,
+  })
 
   const user = useUser();
 
@@ -59,6 +66,33 @@ export default function DashboardPage() {
       { name: "Healthcare Dashboard", tests: 28, completion: 95, status: "completed" },
     ],
   }
+
+  useEffect(() => {
+    async function fetchProjects() {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const projects = await getProjects(user?.id);
+        const testSuites = await getTestSuitesByProjects(projects.map((project: any) => project.id));
+
+        console.log('projects:', projects)
+
+        setCountData({
+          totalProject: projects.length || 0,
+          totalTestSuites: testSuites.length || 0,
+        })
+      } catch (error) {
+        console.error("Failed to fetch projects:", error)
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProjects()
+  }, [user?.id])
+
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -112,8 +146,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-blue-700 mb-1">Total Projects</p>
-                    <h3 className="text-3xl font-bold text-blue-900">{stats.projects}</h3>
-                    <p className="text-xs text-blue-600 mt-1">+2 this month</p>
+                    <h3 className="text-3xl font-bold text-blue-900">{countData.totalProject}</h3>
                   </div>
                   <div className="p-3 bg-blue-600 rounded-full">
                     <FolderOpen className="h-6 w-6 text-white" />
@@ -127,8 +160,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-emerald-700 mb-1">Active Features</p>
-                    <h3 className="text-3xl font-bold text-emerald-900">{stats.features}</h3>
-                    <p className="text-xs text-emerald-600 mt-1">+5 this week</p>
+                    <h3 className="text-3xl font-bold text-emerald-900">{countData.totalTestSuites}</h3>
                   </div>
                   <div className="p-3 bg-emerald-600 rounded-full">
                     <Zap className="h-6 w-6 text-white" />
@@ -192,23 +224,23 @@ export default function DashboardPage() {
                 <Button
                   variant="outline"
                   className="w-full justify-start h-12 hover:bg-emerald-50 hover:border-emerald-200 transition-colors"
-                  onClick={() => router.push("/projects")}
+                  onClick={() => router.push("/project")}
                 >
                   <FolderOpen className="mr-3 h-4 w-4" />
                   View All Projects
                   <ArrowRight className="ml-auto h-4 w-4" />
                 </Button>
 
-                <Button
+                {/* <Button
                   variant="outline"
                   className="w-full justify-start h-12 hover:bg-purple-50 hover:border-purple-200 transition-colors"
                 >
                   <ClipboardList className="mr-3 h-4 w-4" />
                   Generate Report
                   <ArrowRight className="ml-auto h-4 w-4" />
-                </Button>
+                </Button> */}
 
-                <Button
+                {/* <Button
                   variant="outline"
                   className="w-full justify-start h-12 hover:bg-orange-50 hover:border-orange-200 transition-colors"
                   onClick={() => setIsQuickFormOpen(true)}
@@ -216,7 +248,7 @@ export default function DashboardPage() {
                   <MessageSquare className="mr-3 h-4 w-4" />
                   Quick Test Generation
                   <ArrowRight className="ml-auto h-4 w-4" />
-                </Button>
+                </Button> */}
               </CardContent>
             </Card>
 
@@ -237,10 +269,10 @@ export default function DashboardPage() {
                     >
                       <div
                         className={`w-2 h-2 rounded-full ${activity.type === "success"
-                            ? "bg-emerald-500"
-                            : activity.type === "update"
-                              ? "bg-blue-500"
-                              : "bg-orange-500"
+                          ? "bg-emerald-500"
+                          : activity.type === "update"
+                            ? "bg-blue-500"
+                            : "bg-orange-500"
                           }`}
                       />
                       <div className="flex-1 min-w-0">
@@ -259,7 +291,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Project Overview */}
-          <Card className="border-0 shadow-md">
+          {/* <Card className="border-0 shadow-md">
             <CardHeader className="pb-6">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center text-lg">
@@ -324,7 +356,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Performance Summary */}
           <div className="grid gap-6 md:grid-cols-3">

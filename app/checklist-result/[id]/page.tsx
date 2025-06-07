@@ -35,6 +35,8 @@ import { GenerateTestCaseModal } from "@/components/generate-test-case-modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getCheckLists, getListVersion, getVersionLastest } from "@/lib/action/check-list"
 import { formatChecklistToMarkdown } from "@/lib/utils"
+import { generateTestCases } from "@/lib/ai/generate-gemini-test-case"
+import { getTestCases } from "@/lib/action/test-case"
 
 export enum TestCaseStatus {
   PENDING = 'Pending',
@@ -76,7 +78,6 @@ export default function ChecklistResultPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [rightPanelView, setRightPanelView] = useState<"default" | "history" | "changes">("history")
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
-  const [generatedTestCases, setGeneratedTestCases] = useState<TestCase[]>([])
   const [requirementInput, setRequirementInput] = useState("")
 
   const [checkList, setCheckList] = useState<any | null>(null)
@@ -85,8 +86,9 @@ export default function ChecklistResultPage() {
   const [promptForTestCase, setPromptForTestCase] = useState<string[]>([]);
   const router = useRouter()
 
-  console.log('checkList', checkList)
-  console.log(listVersion)
+  const [testCase, setTestcase] = useState([]);
+
+  console.log('testCase', testCase)
 
   useEffect(() => {
     async function fetchData() {
@@ -192,7 +194,12 @@ export default function ChecklistResultPage() {
       categoryObject.forEach((category) => {
         expanded[category.id] = true
       })
-      setExpandedCategories(expanded)
+      setExpandedCategories(expanded);
+
+      const tests = await getTestCases(testSuiteId);
+      if (tests) {
+        setTestcase(tests);
+      }
     }
     fetchData();
   }, [router]);
@@ -211,6 +218,33 @@ export default function ChecklistResultPage() {
   }
 
   const handleStatusChange = () => { }
+
+  const combineStatus: any[] = useMemo(() => {
+    let temp = [];
+    testCase?.map((test: any) => {
+      test?.steps?.map((step: any, index: number) => {
+        temp.push({
+          id: index > 0 ? '' : test.id,
+          check_list_id: index > 0 ? '' : test.id,
+          category: index > 0 ? '' : test.category,
+          priority: index > 0 ? '' : test.priority,
+          status: index > 0 ? '' : test.status,
+          sub_category: index > 0 ? '' : test.sub_category,
+          test_suit_id: index > 0 ? '' : test.test_suit_id,
+          title: index > 0 ? '' : test.title,
+          step: step.step,
+          description: step.description,
+          expected: step.expected,
+          pre_condition: step.pre_condition,
+          step_status: step.status,
+          action: step.action,
+        })
+      })
+    });
+    return temp;
+  }, [testCase]);
+
+  console.log('combineStatus', combineStatus)
 
   const createMockData = () => {
     const mockItems: any[] = [
@@ -749,7 +783,7 @@ export default function ChecklistResultPage() {
   }
 
   const handleItemToggle = (id: string, completed: boolean) => {
-    setChecklistItems((prev) => prev.map((item) => (item.id === id ? { ...item, completed } : item)))
+    setCheckList((prev) => prev.map((item) => (item.id === id ? { ...item, completed } : item)))
 
     // Update categories to reflect the change
     setCategories((prev) =>
@@ -964,13 +998,13 @@ export default function ChecklistResultPage() {
     return Array.from(mainCats)
   }, [categories]);
 
-  console.log('mainCategories',mainCategories)
+  console.log('mainCategories', mainCategories)
 
   const getSubCategoriesByMainCategory = (mainCategory: string) => {
     return categories.filter((category) => category.mainCategory === mainCategory)
   }
 
-  const totalChecks = checklistItems.length
+  const totalChecks = checkList?.length ?? 0;
   const completedChecks = checklistItems.filter((item) => item.completed).length
 
   const handleEditTestCase = (testCase: any) => {
@@ -1012,7 +1046,7 @@ export default function ChecklistResultPage() {
     })
   }
 
-  const handleGenerateTestCases = (settings: any) => {
+  const handleGenerateTestCases = async (settings: any) => {
     // Mock generated test cases
     const mockTestCases: TestCase[] = [
       {
@@ -1075,13 +1109,16 @@ export default function ChecklistResultPage() {
       },
     ]
 
-    setGeneratedTestCases(mockTestCases)
+    // setGeneratedTestCases(mockTestCases)
     setActiveTab("testcases")
 
     toast({
       title: "Test cases generated successfully",
       description: `Generated ${mockTestCases.length} test cases`,
     })
+
+    const data = await generateTestCases(checkList, testSuiteId);
+    setTestcase(data);
   }
 
   const handleSendRequirement = () => {
@@ -1259,8 +1296,6 @@ export default function ChecklistResultPage() {
                           const totalChecksInSubCategory = getTotalChecksBySubCategory(subCategory.id)
                           const completedChecksInSubCategory = getCompletedChecksBySubCategory(subCategory.id)
                           const isExpanded = expandedCategories[subCategory.id]
-
-                          console.log('1234', subCategory)
 
                           return (
                             <div key={subCategory.id} className="border-t">
@@ -1554,7 +1589,7 @@ export default function ChecklistResultPage() {
                   <div className="border-b p-4">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-4">
-                        <h2 className="text-lg font-semibold">Màn hình Đăng nhập</h2>
+                        <h2 className="text-lg font-semibold">Test case</h2>
                         <span className="text-sm text-gray-500">Version 1</span>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -1576,7 +1611,7 @@ export default function ChecklistResultPage() {
 
                     {/* Statistics */}
                     <div className="flex items-center space-x-4 mb-4">
-                      <Badge className="bg-green-100 text-green-800">{generatedTestCases.length} Test Cases</Badge>
+                      <Badge className="bg-green-100 text-green-800">10 Test Cases</Badge>
                       <Badge className="bg-blue-100 text-blue-800">208 Steps</Badge>
                     </div>
 
@@ -1655,13 +1690,13 @@ export default function ChecklistResultPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white">
-                          {checkList?.map((data, index) => (
-                            <tr key={data.id} className="border-b hover:bg-gray-50">
+                          {combineStatus?.map((data: any, index: number) => (
+                            <tr key={index} className="border-b hover:bg-gray-50">
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                {data.id}
+                                {index}
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.content}</div>
+                                <div className="max-w-xs break-words">{data.title}</div>
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.title ?? 'title'}</div>
@@ -1670,33 +1705,33 @@ export default function ChecklistResultPage() {
                                 {data.category}
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                {data.subCategory}
+                                {data.sub_category}
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
+                                {getPriorityDot(data.priority)}
                                 {data.priority}
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.preCondition ?? 'N/A'}</div>
+                                <div className="max-w-xs break-words">{data.pre_condition ?? 'N/A'}</div>
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.description}</div>
+                                <div className="max-w-xs break-words">{data.description ?? 'N/A'}</div>
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words space-y-1">
-                                  {data?.steps?.map((step, stepIndex) => (
-                                    <div key={stepIndex}>{step}</div>
-                                  ))}
-                                </div>
+                                <div className="max-w-xs break-words">{data.step ?? 'N/A'}</div>
+                              </td>
+                              
+                              
+                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                                <div className="max-w-xs break-words">{data.expected ?? 'N/A'}</div>
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.expectedResult}</div>
+                                <div className="max-w-xs break-words">{data.test_data ?? 'N/A'}</div>
                               </td>
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
-                                {data.testData}
-                              </td>
+
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <Select
-                                  value={data.status}
+                                  value={data.step_status}
                                   onValueChange={(value: TestCaseStatus) =>
                                     handleStatusChange()
                                   }
@@ -1729,6 +1764,7 @@ export default function ChecklistResultPage() {
                                 </Select>
                               </td>
                             </tr>
+
                           ))}
                         </tbody>
                       </table>

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { bulkInsertTestcase } from "../action/test-case";
 
 /**
  * Generates test cases based on a checklist and project settings using the Gemini API.
@@ -107,7 +108,7 @@ export async function generateCheckListGemini({
     }
 }
 
-export async function generateTestCases(checkList: any) {
+export async function generateTestCases(checkList: any, test_suit_id: string) {
     const API_KEY = process.env.GEMINI_API_KE || 'AIzaSyCPtMYMP9FVh3aw8oEPd3oNjWSqoulRTFY';
 
     if (!API_KEY) {
@@ -123,31 +124,27 @@ export async function generateTestCases(checkList: any) {
     const prompt = `
         Generate test cases from the checklist (each test case will be display below each related check item), using the following format:
         ID: $PREFIX_001
-        Checklist-ID: [Checklist ID]
+        ChecklistId: [The id number of the initial checklist, number only]
         Category: [Category Name]
         Sub-Category: [Sub-Category]
         Checklist: [Checklist Item in their own language]
         Priority: [Priority Number 1-4]
         Title: [Title of testcase]
         Description: [Description of testcase]
+        Precondition: [Precondition of the testcase]
         Step: [Step No]
-        Action: [Details of test step]
+        Each step has following field: (
+        Step: [Step of the testcase, start from 1]
+        Action: [Action of the step]
         Expected: [Expected result of step]
         Test Data: [Test data or N/A if not applicable]
-        Step: [Step No]
-        Action: [Details of test step]
-        Expected: [Expected result of step]
-        Test Data: [Test data or N/A if not applicable]
+        )
         [Add additional steps as needed following the same format]
         Note: Replace $PREFIX with "LG-" and use sequential numbers (001, 002, 003,... format)
-        Test Data Examples:
-        email company:
-
 
         Requirements:
         Generate 20 test cases for each time
-        Write testcase content, Category and Subcategory in English
-        Write "Checklist" content in their language when send to you
+        Write testcase content, Category and Subcategory all in English
         Each test case should have a unique ID starting with "LG-" followed by sequential numbers
         Test steps should be basic with essential actions only
         Include relevant test data from the examples provided
@@ -199,6 +196,61 @@ export async function generateTestCases(checkList: any) {
 
 
         console.log('gen test case result:', resultArray);
+        //         {
+        //     "ID": "LG-001",
+        //     "Checklist-ID": "CHK-001",
+        //     "Category": "Authentication",
+        //     "Sub-Category": "Login",
+        //     "Checklist": "ログインが成功すること",
+        //     "Priority": 2,
+        //     "Title": "Successful login with valid standard credentials",
+        //     "Description": "Verify that a user can successfully log in using valid email and password.",
+        //     "Step": [
+        //         {
+        //             "Action": "Navigate to the login page.",
+        //             "Expected": "Login page is displayed.",
+        //             "Test Data": "N/A"
+        //         },
+        //         {
+        //             "Action": "Enter valid email and password.",
+        //             "Expected": "Fields accept input correctly.",
+        //             "Test Data": {
+        //                 "email": "valid.user@example.com",
+        //                 "password": "ValidPassword123"
+        //             }
+        //         },
+        //         {
+        //             "Action": "Click the 'Login' button.",
+        //             "Expected": "User is successfully logged in and redirected to the dashboard or profile page.",
+        //             "Test Data": "N/A"
+        //         }
+        //     ]
+        // }
+        const data = [];
+
+        resultArray.map((item)=> {
+            data.push({
+                title: item.Title,
+                category: item.Category,
+                sub_category: item['Sub-Category'],
+                priority: item.Priority,
+                steps: item.Step.map((step, index) => ({
+                    step: index,
+                    pre_condition: step.precondition,
+                    description: step.action,
+                    expected: step.expected,
+                    status: 2,
+                })),
+                check_list_id: item.ChecklistId,
+                test_suit_id: Number(test_suit_id),
+        })
+        });
+        console.log('data ne', data)
+        try {
+            bulkInsertTestcase(data);
+        } catch(err){
+            console.log('Error bulkInsertTestcase:', err)
+        }
 
         return resultArray;
     } catch (error) {

@@ -81,3 +81,18 @@ export async function bulkInsertTestcase(input: any[]) {
     }
 
 }
+
+export async function deleteTestCases(testSuiteId: number) {
+    const supabase = createClient()
+    const { data, error } = await supabase
+        .from("test_case")
+        .delete()
+        .eq("test_suit_id", testSuiteId) // Assuming all IDs belong to the same test suite
+
+    if (error) {
+        console.error("Error deleting test cases:", error)
+        throw error
+    }
+
+    return data
+}

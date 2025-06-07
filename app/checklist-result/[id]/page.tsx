@@ -39,7 +39,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createCheckLists, deleteCheckList, getCheckLists, getListVersion, getVersionLastest, updateCheckList, updateStatusChecklist } from "@/lib/action/check-list"
 import { formatChecklistToMarkdown, splitArray } from "@/lib/utils"
 import { generateCheckListGemini, generateTestCases } from "@/lib/ai/generate-gemini-test-case"
-import { getTestCases } from "@/lib/action/test-case"
+import { deleteTestCases, getTestCases } from "@/lib/action/test-case"
 import { exportTestCase, exportTestReport } from "@/lib/lark"
 import { generateTestReport } from "@/lib/ai/generate-gemini-test-case"
 import { Tooltip } from "@/components/ui/tooltip"
@@ -520,6 +520,8 @@ export default function ChecklistResultPage() {
     // setGeneratedTestCases(mockTestCases)
     setActiveTab("testcases")
     try {
+      await deleteTestCases(Number(testSuiteId));
+
       const data = await generateTestCases(checkList, testSuiteId);
       if (data) {
         toast({

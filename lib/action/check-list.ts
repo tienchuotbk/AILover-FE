@@ -112,16 +112,13 @@ export async function createCheckLists(checkListData: any) {
 
 export async function updateCheckList(
     checkListId: string,
-    priority: number,
-    category: string,
-    originalNumber: number,
-    details: string
+    dataUpdate: any,
 ) {
     const supabase = createClient()
     const { data, error } = await supabase
         .from("check_list")
         .update({
-            priority, category, original_number: originalNumber, details
+            ...dataUpdate,
         })
         .eq("id", checkListId)
         .select("*")

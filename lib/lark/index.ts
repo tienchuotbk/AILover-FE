@@ -1,26 +1,4 @@
-const baseURL = process.env.LARK_BASE_URL || 'https://open.larksuite.com/open-apis';
-const appID = process.env.LARK_APP_ID || 'cli_a8c915c87e78d029';
-const appSecret = process.env.LARK_APP_SECRET || 'D0yyvfvGTO33juMTUPoZcdwSUnvFHSMo';
-const serverURL = 'http://localhost:9000'; 
-
-export async function getTenantToken() {
-    const response = await fetch(`${serverURL}/api/lark/token`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to fetch tenant token');
-    }
-
-    const { data } = await response.json();
-
-    console.log('data', data)
-
-    return data.tenant_access_token || '';
-}
+const serverURL = 'http://localhost:9000';
 
 export async function getContentFromLarkDoc(document_id: string) {
     const response = await fetch(`${serverURL}/api/lark/document`, {
@@ -39,4 +17,39 @@ export async function getContentFromLarkDoc(document_id: string) {
 
     const data = await response.json();
     return data;
+}
+
+export async function exportTestCase(data: any) {
+    const response = await fetch(`${serverURL}/api/lark/export-test-case`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to export test case');
+    }
+
+    const result = await response.json();
+    return result;
+}
+
+export async function exportTestReport(data: any) {
+    const response = await fetch(`${serverURL}/api/lark/export-test-report`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+
+
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to export test report');
+    }
+    const result = await response.json();
+    return result;
 }

@@ -1,15 +1,17 @@
 'use client'
 
-import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
+import { Github, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
@@ -39,21 +41,36 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Welcome!</CardTitle>
-          <CardDescription>Sign in to your account to continue</CardDescription>
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1 text-center">
+          <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-white font-bold text-2xl">GT</span>
+          </div>
+          <CardTitle className="text-2xl font-bold">Chào mừng đến với GenTest</CardTitle>
+          <CardDescription>Đăng nhập để bắt đầu tạo test case tự động</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSocialLogin}>
-            <div className="flex flex-col gap-6">
-              {error && <p className="text-sm text-destructive-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Logging in...' : 'Continue with Github'}
-              </Button>
-            </div>
-          </form>
+        <CardContent className="space-y-4">
+          <Button className="w-full h-12 text-base" onClick={handleSocialLogin} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                <span>Đang xử lý...</span>
+              </>
+            ) : (
+              <>
+                <Github className="w-5 h-5 mr-2" />
+                <span>Đăng nhập bằng GitHub</span>
+              </>
+            )}
+          </Button>
         </CardContent>
+        <CardFooter className="text-center">
+          <p className="text-sm text-gray-600 mx-auto">
+            Bằng cách đăng nhập, bạn đồng ý với{" "}
+            <span className="text-blue-600 hover:underline cursor-pointer">Điều khoản dịch vụ</span> và{" "}
+            <span className="text-blue-600 hover:underline cursor-pointer">Chính sách bảo mật</span> của chúng tôi.
+          </p>
+        </CardFooter>
       </Card>
     </div>
   )

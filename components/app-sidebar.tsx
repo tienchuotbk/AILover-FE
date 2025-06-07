@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { redirect, usePathname } from "next/navigation"
 import {
@@ -18,9 +18,11 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { TestTube, Users, FolderOpen, MessageSquare, Plus, ChevronDown, BarChart3, Home } from "lucide-react"
+import { TestTube, Users, FolderOpen, MessageSquare, Plus, ChevronDown, BarChart3, Home, LogOut, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useUser } from '@supabase/auth-helpers-react'
+import { createClient } from "@/lib/supabase/client"
+import { getProjects } from "@/lib/action/project"
 
 interface AppSidebarProps {
   onCreateProject: () => void
@@ -29,8 +31,26 @@ interface AppSidebarProps {
 export function AppSidebar() {
   const pathname = usePathname()
   const user = useUser()
-
+  
   const [isProjectsHovered, setIsProjectsHovered] = useState(false)
+  const [projects, setProjects] = useState<any[]>([])
+
+
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const data = await getProjects(user?.id);
+        setProjects(data)
+      } catch (error) {
+        console.error("Failed to fetch projects:", error)
+      } finally {
+        // setLoading(false);
+      }
+    }
+
+    fetchProjects()
+  }, [user?.id])
+
 
   const mainNavItems = [
     {
@@ -46,8 +66,6 @@ export function AppSidebar() {
     },
   ]
 
-  const projects = [{ id: 1, name: "Project 1" }]
-
   const recentFeatures = [
     {
       title: "Dashboard Overview",
@@ -60,6 +78,16 @@ export function AppSidebar() {
       icon: Home,
     },
   ]
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    try {
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
+  }
 
   return (
     <Sidebar className="border-r">
@@ -103,14 +131,14 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* <SidebarGroup>
+        <SidebarGroup>
           <SidebarGroupLabel>Projects</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {projects.map((project) => (
+              {projects.slice(0, 5).map((project) => (
                 <SidebarMenuItem key={project.id}>
                   <SidebarMenuButton asChild>
-                    <Link href={`/projects/${project.id}`}>
+                    <Link href={`/project/${project.id}`}>
                       <FolderOpen className="w-4 h-4" />
                       <span>{project.name}</span>
                     </Link>
@@ -120,12 +148,14 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
           <div className="px-2">
-            <Button variant="ghost" size="sm" className="w-full justify-start text-xs">
+            <Button variant="ghost" size="sm" className="w-full justify-start text-xs"
+              onClick={() => redirect('/project')}
+            >
               View All
-              <ChevronDown className="w-3 h-3 ml-auto" />
+              <ChevronRight className="w-3 h-3 ml-auto" />
             </Button>
           </div>
-        </SidebarGroup> */}
+        </SidebarGroup>
 
         {/* <SidebarGroup>
           <SidebarGroupLabel>Recent features</SidebarGroupLabel>
@@ -161,7 +191,9 @@ export function AppSidebar() {
             <p className="text-sm font-medium truncate">{user?.user_metadata.name}</p>
             <p className="text-xs text-gray-500 truncate">{user?.email}</p>
           </div>
-          <ChevronDown className="w-4 h-4 text-gray-400" />
+          <Button variant="ghost" size="icon" onClick={handleSignOut} title="Đăng xuất">
+            <LogOut className="w-4 h-4" />
+          </Button>
         </div>
       </SidebarFooter>
     </Sidebar>

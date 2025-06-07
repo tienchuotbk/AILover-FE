@@ -1,12 +1,15 @@
 import { createClient } from "@/lib/supabase/client"
 
-export async function getCheckLists(testSuiteId: string, versionLastest: number) {
+export async function getCheckLists(testSuiteId: string, versionLastest?: number) {
     const supabase = createClient()
-    const { data, error } = await supabase
+    const { data, error } = versionLastest? await supabase
         .from("check_list")
         .select("*")
         .eq("testSuiteId", testSuiteId)
-        .eq("version", versionLastest)
+        .eq("version", versionLastest) : await supabase
+        .from("check_list")
+        .select("*")
+        .eq("testSuiteId", testSuiteId)
 
     if (error) {
         console.error("Error fetching checklists:", error)

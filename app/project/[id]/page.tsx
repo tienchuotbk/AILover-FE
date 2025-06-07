@@ -20,8 +20,8 @@ import { createCheckLists, getVersionLastest } from "@/lib/action/check-list"
 import { splitArray } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { createTestSuite, getTestSuites } from "@/lib/action/test-suite"
 import { getContentFromLarkDoc } from "@/lib/lark"
+import { createTestSuite, getTestSuite, getTestSuites } from "@/lib/action/test-suite"
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -29,7 +29,6 @@ export default function ProjectDetailPage() {
   const projectId = params.id as string;
 
   const [project, setProject] = useState<any | null>(null)
-  const [conversations, setConversations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [requirements, setRequirements] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
@@ -40,10 +39,13 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [projectData] = await Promise.all([
+        const [projectData, testSuit] = await Promise.all([
           getProject(projectId),
+          getTestSuites(projectId),
         ])
+
         setProject(projectData)
+        setTestSuites(testSuit)
       } catch (error) {
         console.error("Failed to fetch project data:", error)
         router.push("/project")
@@ -96,7 +98,7 @@ export default function ProjectDetailPage() {
       const testSuite = await createTestSuite(
         testSuiteName,
         projectId,
-        ''
+        requirements,
       );
 
       const response = await generateCheckListGemini({
@@ -138,7 +140,7 @@ export default function ProjectDetailPage() {
         await Promise.allSettled(promises);
       }
 
-      router.push(`/test-suite/${testSuite.id}`)
+      router.push(`/checklist-result/${testSuite.id}`)
     } catch (error) {
       console.log("Error creating checklist:", error)
     } finally {
@@ -146,31 +148,8 @@ export default function ProjectDetailPage() {
     }
   }, [requirements, project?.settings, projectId, router, testSuiteName, larkDocument]);
 
-  const handleConversationClick = (conversation: any) => {
-    // Load conversation và redirect đến checklist result
-    sessionStorage.setItem("generatedChecklist", JSON.stringify(conversation.checklistItems || []))
-    sessionStorage.setItem("currentConversationId", conversation.id)
-    router.push("/checklist-result")
-  }
-
-  const handleDeleteConversation = async (conversationId: string) => {
-    try {
-      // Mock delete - trong thực tế sẽ call API
-      setConversations((prev) => prev.filter((conv) => conv.id !== conversationId))
-      //   toast({
-      //     title: "Thành công",
-      //     description: "Đã xóa conversation",
-      //   })
-    } catch (error) {
-      //   toast({
-      //     title: "Lỗi",
-      //     description: "Không thể xóa conversation",
-      //     variant: "destructive",
-      //   })
-    }
-  }
-
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (input: string) => {
+    const date = new Date(input);
     const now = new Date()
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
 
@@ -304,6 +283,7 @@ export default function ProjectDetailPage() {
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-sm truncate">{testSuite.name}</h3>
                             <p className="text-xs text-gray-500 mt-1">{testSuite.description || "No description"}</p>
+                            <p className="text-xs text-gray-400 mt-2">{testSuite.created_at ? formatTimeAgo(testSuite.created_at) : 'N/A'}</p>
                           </div>
                         </div>
                       </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +26,9 @@ import {
   List,
   Printer,
   ChevronLeft,
+  Loader2,
+  ImagePlus,
+  X,
 } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
@@ -41,6 +44,7 @@ import { exportTestCase, exportTestReport } from "@/lib/lark"
 import { generateTestReport } from "@/lib/ai/generate-gemini-test-case"
 import { Tooltip } from "@/components/ui/tooltip"
 import { getTestSuite } from "@/lib/action/test-suite"
+import { uploadFileFromBrowser } from "@/lib/action/upload-file"
 
 export enum TestCaseStatus {
   PENDING = 'Pending',
@@ -107,6 +111,10 @@ export default function ChecklistResultPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [testCase, setTestcase] = useState([]);
   const [isUpdateCheckList, setIsUpdateCheckList] = useState(false);
+  const [isUploading, setIsUploading] = useState(false)
+  const [urlFile, setUrlFile] = useState<any[]>([]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -171,8 +179,8 @@ export default function ChecklistResultPage() {
       if (testSuiteId) {
         try {
           const data = await getTestSuite(testSuiteId);
-          if(data){
-            setTestSuiteTitle('Testsuit: '+ data.name);
+          if (data) {
+            setTestSuiteTitle('Testsuit: ' + data.name);
           }
         } catch (e) {
           console.log(e);
@@ -468,7 +476,7 @@ export default function ChecklistResultPage() {
   // const completedChecks = categories.filter((item) => item.completed).length
   // console.log('completedChecks', categories);
 
-  const completedChecks = useMemo(()=> {
+  const completedChecks = useMemo(() => {
     let count = 0;
     categories.forEach((category) => {
       count += category.items.filter((item: any) => item.completed).length;
@@ -522,7 +530,10 @@ export default function ChecklistResultPage() {
     console.log('Generating new checklist with requirement:', requirementInput);
     const response = await generateCheckListGemini({
       document: '',
-      checklist: requirementInput,
+      checklist: `
+        ${requirementInput}
+        Link image screenshot requirement/feature base: ${urlFile.length > 0 ? urlFile.join(', ') : 'No images uploaded'},
+      `,
       projectSettings: {},
     });
 
@@ -558,8 +569,8 @@ export default function ChecklistResultPage() {
     console.log("Generated checklist:", response)
     setIsGenerating(false)
 
-    // setRequirementInput("")
-  }, [requirementInput]);
+    setRequirementInput("")
+  }, [requirementInput, urlFile]);
 
   const handleChangeVersion = async (version: number) => {
     const response = await getCheckLists(testSuiteId, version);
@@ -631,7 +642,28 @@ export default function ChecklistResultPage() {
     }
   }, [testCase]);
 
-  console.log('checkList', checkList)
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    setIsUploading(true)
+
+    try {
+
+      const { url } = await uploadFileFromBrowser(files[0])
+      setUrlFile((prev) => [...prev, url]);
+
+    } catch (error) {
+      console.error("Upload error:", error)
+
+    } finally {
+      setIsUploading(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
 
   return (
     <SidebarProvider>
@@ -980,15 +1012,52 @@ export default function ChecklistResultPage() {
                               onChange={(e) => setRequirementInput(e.target.value)}
                               className="min-h-[80px] pr-20"
                             />
+
+                            {urlFile.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {urlFile.map((file) => (
+                                  <div key={file} className="flex items-center gap-2 bg-gray-50 rounded-md px-3 py-2 border">
+                                    <div className="w-4 h-4 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50">
+                                      <img
+                                        src={file || "/placeholder.svg"}
+                                        alt={"Uploaded file"}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+
+                                    <button
+                                      onClick={() => {
+                                        setUrlFile((prev) => prev.filter((f) => f !== file))
+                                      }}
+                                      className="text-gray-400 hover:text-gray-600"
+                                      aria-label="Remove file"
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
                             <div className="absolute bottom-2 right-2 flex space-x-1">
+                              <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleFileUpload}
+                              />
+
+                              {/* Image upload button */}
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
                                 className="h-6 w-6"
-                                onClick={handleImageUpload}
                                 title="Upload image"
                               >
-                                <Upload className="w-3 h-3" />
+                                {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
                               </Button>
                               <Button
                                 variant="ghost"

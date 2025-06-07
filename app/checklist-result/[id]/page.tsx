@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -35,6 +35,8 @@ import { GenerateTestCaseModal } from "@/components/generate-test-case-modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getCheckLists, getListVersion, getVersionLastest } from "@/lib/action/check-list"
 import { formatChecklistToMarkdown } from "@/lib/utils"
+import { exportTestCase, exportTestReport } from "@/lib/lark"
+import { generateTestReport } from "@/lib/ai/generate-gemini-test-case"
 
 export enum TestCaseStatus {
   PENDING = 'Pending',
@@ -964,7 +966,7 @@ export default function ChecklistResultPage() {
     return Array.from(mainCats)
   }, [categories]);
 
-  console.log('mainCategories',mainCategories)
+  console.log('mainCategories', mainCategories)
 
   const getSubCategoriesByMainCategory = (mainCategory: string) => {
     return categories.filter((category) => category.mainCategory === mainCategory)
@@ -1103,6 +1105,40 @@ export default function ChecklistResultPage() {
     })
   }
 
+  const handleExportTestCase = useCallback(async () => {
+    try {
+
+
+
+
+      // Create file sheet on lark
+      const { data } = await exportTestCase(checkList);
+      if (data) {
+        window.open(data, "_blank");
+      }
+    } catch (error) {
+      console.error("Error exporting report:", error);
+    }
+  }, [checkList]);
+
+
+  const handleExportTestReport = useCallback(async () => {
+    const newCheckList = checkList.map((item: any) => ({
+      ...item,
+      // random status for demo purposes with 3 statuses: PASS, FAIL, PENDING
+      status: Math.random() > 0.5 ? "PASS" : Math.random() > 0.5 ? "FAIL" : "PENDING",
+    }));
+
+    const response = await generateTestReport(newCheckList);
+
+    if (response) {
+      const { data } = await exportTestReport(response);
+      if (data) {
+        window.open(data, "_blank", "noopener,noreferrer");
+      }
+    }
+  }, [checkList]);
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -1111,7 +1147,7 @@ export default function ChecklistResultPage() {
           {/* Header */}
           <div className="flex items-center justify-between border-b p-4">
             <div className="flex items-center space-x-4">
-              <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
+              <button onClick={() => router.push("/projects/1")} className="text-gray-500 hover:text-gray-700">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <h1 className="text-xl font-semibold">{projectTitle}</h1>
@@ -1558,18 +1594,17 @@ export default function ChecklistResultPage() {
                         <span className="text-sm text-gray-500">Version 1</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm"
+                          onClick={handleExportTestCase}
+                        >
                           <FileSpreadsheet className="w-4 h-4 mr-2" />
-                          Export to Excel
+                          Export Test Cases
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <Printer className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <Grid3X3 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <List className="w-4 h-4" />
+                        <Button variant="outline" size="sm"
+                          onClick={handleExportTestReport}
+                        >
+                          <FileSpreadsheet className="w-4 h-4 mr-2" />
+                          Export Test Report
                         </Button>
                       </div>
                     </div>

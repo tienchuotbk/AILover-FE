@@ -57,7 +57,7 @@ export function AppSidebar() {
 
   const mainNavItems = [
     {
-      title: "New testcase",
+      title: "Dashboard",
       url: "/dashboard",
       icon: TestTube,
     },

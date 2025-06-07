@@ -34,6 +34,12 @@ import { EditTestCaseModal } from "@/components/edit-test-case-modal"
 import { GenerateTestCaseModal } from "@/components/generate-test-case-modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+export enum TestCaseStatus {
+  PENDING = 'Pending',
+  PASS = 'Pass',
+  FAIL = 'Fail'
+}
+
 interface TestCase {
   id: string
   checklist: string
@@ -45,7 +51,8 @@ interface TestCase {
   description: string
   steps: string[]
   expectedResult: string
-  testData: string
+  testData: string,
+  status: TestCaseStatus
 }
 
 export default function ChecklistResultPage() {
@@ -112,6 +119,21 @@ export default function ChecklistResultPage() {
       createMockData()
     }
   }, [router])
+
+  const getStatusStyle = (status: TestCaseStatus) => {
+    switch (status) {
+      case TestCaseStatus.PASS:
+        return "bg-green-100 text-green-800 border-green-200"
+      case "Fail":
+        return "bg-red-100 text-red-800 border-red-200"
+      case "Pending":
+        return "bg-purple-100 text-purple-800 border-purple-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
+  const handleStatusChange = () => {}
 
   const createMockData = () => {
     const mockItems: any[] = [
@@ -929,6 +951,7 @@ export default function ChecklistResultPage() {
         expectedResult:
           "The login page loads successfully. The title/heading 'Đăng nhập' or equivalent is displayed prominently at the top of the login form or page.",
         testData: "N/A",
+        status: TestCaseStatus.PASS,
       },
       {
         id: "TC002",
@@ -949,6 +972,7 @@ export default function ChecklistResultPage() {
         expectedResult:
           "The login page loads successfully. A label with the text 'Tên đăng nhập' or 'Email' is displayed correctly positioned relative to the input field. A label with the text 'Mật khẩu' is displayed correctly positioned relative to the input field.",
         testData: "N/A",
+        status: TestCaseStatus.PENDING,
       },
       {
         id: "TC003",
@@ -967,6 +991,7 @@ export default function ChecklistResultPage() {
         ],
         expectedResult: "The login button is visible, enabled, and responds to click events appropriately.",
         testData: "N/A",
+        status: TestCaseStatus.PENDING,
       },
     ]
 
@@ -1544,6 +1569,10 @@ export default function ChecklistResultPage() {
                             <th className="border border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                               TEST DATA
                             </th>
+                             <th className="border border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                              STATUS
+                            </th>
+
                           </tr>
                         </thead>
                         <tbody className="bg-white">
@@ -1585,6 +1614,40 @@ export default function ChecklistResultPage() {
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
                                 {testCase.testData}
+                              </td>
+                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                                <Select
+                                  value={testCase.status}
+                                  onValueChange={(value: TestCaseStatus) =>
+                                    handleStatusChange()
+                                  }
+                                >
+                                  <SelectTrigger
+                                    className={`w-20 h-7 text-xs border ${getStatusStyle(testCase.status)}`}
+                                  >
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Pass">
+                                      <div className="flex items-center">
+                                        <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                                        Pass
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Fail">
+                                      <div className="flex items-center">
+                                        <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                                        Fail
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="Pending">
+                                      <div className="flex items-center">
+                                        <span className="inline-block w-2 h-2 rounded-full bg-purple-500 mr-2"></span>
+                                        Pending
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </td>
                             </tr>
                           ))}

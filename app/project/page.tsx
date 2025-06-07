@@ -124,7 +124,7 @@ export default function ProjectsPage() {
 
           {/* Projects Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
+            {projects.filter((project) => project.name?.includes(searchQuery)).map((project) => (
               <Card key={project.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <CardTitle className="text-lg">{project.name}</CardTitle>

@@ -256,6 +256,7 @@ export default function ChecklistResultPage() {
           action: step.action,
           test_data: step.testData,
           description: index > 0 ? '' : test.description,
+          span: (test.steps.length && index === 0) ? test.steps.length : 0,
         })
       })
     });
@@ -981,7 +982,7 @@ export default function ChecklistResultPage() {
   }
 
   const getPriorityDot = (priority: Priority) => {
-    if(!priority) return null;
+    if (!priority) return null;
     const color = getPriorityColor(priority)
     return <span className={`inline-block w-3 h-3 rounded-full ${color} mr-1`}></span>
   }
@@ -1067,76 +1068,18 @@ export default function ChecklistResultPage() {
 
   const handleGenerateTestCases = async (settings: any) => {
     // Mock generated test cases
-    const mockTestCases: TestCase[] = [
-      {
-        id: "TC001",
-        checklist: "Xác minh tiêu đề/heading của trang đăng nhập hiển thị đúng.",
-        title: "Verify Login Page Title/Heading",
-        category: "UI & Layout",
-        subCategory: "Static Elements",
-        priority: 2,
-        preCondition: "User is on the login page.",
-        description: "This test case verifies that the main title or heading of the login page is displayed correctly.",
-        steps: [
-          "1. Navigate to the application's login page.",
-          "2. Observe the main heading or title displayed on the page.",
-        ],
-        expectedResult:
-          "The login page loads successfully. The title/heading 'Đăng nhập' or equivalent is displayed prominently at the top of the login form or page.",
-        testData: "N/A",
-        status: TestCaseStatus.PASS,
-      },
-      {
-        id: "TC002",
-        checklist:
-          "Xác minh các label cho trường 'Tên đăng nhập' hoặc 'Email' và 'Mật khẩu' hiển thị chính xác và đúng vị trí.",
-        title: "Verify Input Field Labels",
-        category: "UI & Layout",
-        subCategory: "Static Elements",
-        priority: 2,
-        preCondition: "User is on the login page.",
-        description:
-          "This test case verifies that the labels for the 'Tên đăng nhập' or 'Email' field and the 'Mật khẩu' field are displayed correctly and positioned appropriately next to or above their respective input fields.",
-        steps: [
-          "1. Navigate to the application's login page.",
-          "2. Locate the input field intended for username or email.",
-          "3. Locate the input field intended for password.",
-        ],
-        expectedResult:
-          "The login page loads successfully. A label with the text 'Tên đăng nhập' or 'Email' is displayed correctly positioned relative to the input field. A label with the text 'Mật khẩu' is displayed correctly positioned relative to the input field.",
-        testData: "N/A",
-        status: TestCaseStatus.PENDING,
-      },
-      {
-        id: "TC003",
-        checklist: "Xác minh nút 'Đăng nhập' hiển thị và có thể click được.",
-        title: "Verify Login Button Functionality",
-        category: "UI & Layout",
-        subCategory: "Interactive Elements",
-        priority: 1,
-        preCondition: "User is on the login page.",
-        description: "This test case verifies that the login button is visible and clickable.",
-        steps: [
-          "1. Navigate to the application's login page.",
-          "2. Locate the login button.",
-          "3. Verify the button is visible and enabled.",
-          "4. Click the login button.",
-        ],
-        expectedResult: "The login button is visible, enabled, and responds to click events appropriately.",
-        testData: "N/A",
-        status: TestCaseStatus.PENDING,
-      },
-    ]
 
     // setGeneratedTestCases(mockTestCases)
     setActiveTab("testcases")
 
-    toast({
-      title: "Test cases generated successfully",
-      description: `Generated ${mockTestCases.length} test cases`,
-    })
 
     const data = await generateTestCases(checkList, testSuiteId);
+    if (data) {
+      toast({
+        title: "Test cases generated successfully",
+        description: `Generated ${data.length} test cases`,
+      })
+    }
     setTestcase(data);
   }
 
@@ -1744,31 +1687,31 @@ export default function ChecklistResultPage() {
                         <tbody className="bg-white">
                           {combineStatus?.map((data: any, index: number) => (
                             <tr key={index} className="border-b hover:bg-gray-50">
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 {index}
-                              </td>
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null }
+                              { data.span ? <td rowSpan={data.span}  className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.title}</div>
-                              </td>
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null }
+                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.title ?? 'title'}</div>
-                              </td>
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null }
+                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 {data.category}
-                              </td>
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null }
+                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 {data.sub_category}
-                              </td>
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
+                              </td> : null }
+                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
                                 {getPriorityDot(data.priority)}
                                 {data.priority}
-                              </td>
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null }
+                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.pre_condition ?? 'N/A'}</div>
-                              </td>
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null }
+                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.description ?? 'N/A'}</div>
-                              </td>
+                              </td> : null }
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.step ?? 'N/A'}</div>
                               </td>
@@ -1783,7 +1726,7 @@ export default function ChecklistResultPage() {
 
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <Select
-                                  value={data.step_status}
+                                  value={data.step_status?.toString() ?? '2'}
                                   onValueChange={(value: TestCaseStatus) =>
                                     handleStatusChange()
                                   }
@@ -1794,19 +1737,19 @@ export default function ChecklistResultPage() {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="Pass">
+                                    <SelectItem value="1">
                                       <div className="flex items-center">
                                         <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
                                         Pass
                                       </div>
                                     </SelectItem>
-                                    <SelectItem value="Fail">
+                                    <SelectItem value="0">
                                       <div className="flex items-center">
                                         <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>
                                         Fail
                                       </div>
                                     </SelectItem>
-                                    <SelectItem value="Pending">
+                                    <SelectItem value="2">
                                       <div className="flex items-center">
                                         <span className="inline-block w-2 h-2 rounded-full bg-purple-500 mr-2"></span>
                                         Pending

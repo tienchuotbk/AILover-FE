@@ -157,11 +157,6 @@ export default function ChecklistResultPage() {
         expanded[category.id] = true
       })
       setExpandedCategories(expanded);
-
-      const tests: any = await getTestCases(testSuiteId);
-      if (tests) {
-        setTestcase(tests);
-      }
     }
     fetchData();
   }, [router, isGenerating, isUpdateCheckList]);
@@ -181,6 +176,16 @@ export default function ChecklistResultPage() {
     };
     fetchTestSuiteData();
   }, [testSuiteId]);
+
+  useEffect(()=> {
+    async function fetchData(){
+      const tests: any = await getTestCases(testSuiteId);
+      if (tests) {
+        setTestcase(tests);
+      }
+    }
+    fetchData();
+  }, [isGenerateModalOpen])
 
   const getStatusStyle = (status: TestCaseStatus) => {
     switch (status) {

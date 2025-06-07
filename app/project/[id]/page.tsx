@@ -79,6 +79,7 @@ export default function ProjectDetailPage() {
 
   const handleCreateChecklist = useCallback(async () => {
     let documentContent = '';
+    let number = 0;
     const pattern = /^https:\/\/[a-zA-Z0-9.-]+\.larksuite\.com\/docx\/[a-zA-Z0-9_-]+$/;
     if (larkDocument?.trim() && pattern.test(larkDocument?.trim())) {
       const documentId = larkDocument?.trim().split('/').pop();
@@ -104,6 +105,8 @@ export default function ProjectDetailPage() {
         projectId,
         requirements,
       );
+
+      number = testSuite.id;
 
       const response = await generateCheckListGemini({
         document: documentContent,
@@ -147,10 +150,11 @@ export default function ProjectDetailPage() {
         await Promise.allSettled(promises);
       }
 
-      router.push(`/checklist-result/${testSuite.id}`)
+      // router.push(`/checklist-result/${testSuite.id}`)
     } catch (error) {
       console.log("Error creating checklist:", error)
     } finally {
+      router.push(`/checklist-result/${number}`)
       setIsGenerating(false)
     }
   }, [requirements, project?.settings, projectId, router, testSuiteName, larkDocument, urlFile]);

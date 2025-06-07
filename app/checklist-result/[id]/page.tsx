@@ -1130,24 +1130,18 @@ export default function ChecklistResultPage() {
     try {
 
       // Create file sheet on lark
-      const { data } = await exportTestCase(checkList);
+      const { data } = await exportTestCase(testCase);
       if (data) {
         window.open(data, "_blank");
       }
     } catch (error) {
       console.error("Error exporting report:", error);
     }
-  }, [checkList]);
+  }, [testCase]);
 
 
   const handleExportTestReport = useCallback(async () => {
-    const newCheckList = checkList.map((item: any) => ({
-      ...item,
-      // random status for demo purposes with 3 statuses: PASS, FAIL, PENDING
-      status: Math.random() > 0.5 ? "PASS" : Math.random() > 0.5 ? "FAIL" : "PENDING",
-    }));
-
-    const response = await generateTestReport(newCheckList);
+    const response = await generateTestReport(testCase);
 
     if (response) {
       const { data } = await exportTestReport(response);
@@ -1155,7 +1149,7 @@ export default function ChecklistResultPage() {
         window.open(data, "_blank", "noopener,noreferrer");
       }
     }
-  }, [checkList]);
+  }, [testCase]);
 
   console.log('checkList', checkList)
 

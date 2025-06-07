@@ -1,4 +1,4 @@
-const serverURL = 'http://localhost:9000'; Add commentMore actions
+const serverURL = 'http://localhost:9000';
 
 export async function getContentFromLarkDoc(document_id: string) {
     const response = await fetch(`${serverURL}/api/lark/document`, {
@@ -50,7 +50,6 @@ export async function exportTestReport(data: any) {
     if (!response.ok) {
         throw new Error('Failed to export test report');
     }
-Add commentMore actions
     const result = await response.json();
     return result;
 }

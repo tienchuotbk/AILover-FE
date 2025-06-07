@@ -182,7 +182,7 @@ export default function ProjectDetailPage() {
           <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="text-center py-12">
               <p className="text-gray-500 mb-4">Project not found</p>
-              <Button onClick={() => router.push("/projects")}>Back to Projects</Button>
+              <Button onClick={() => router.push("/project")}>Back to Projects</Button>
             </div>
           </div>
         </SidebarInset>
@@ -274,7 +274,7 @@ export default function ProjectDetailPage() {
                   <Card
                     key={testSuite.id}
                     className="hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => {}}
+                    onClick={() => router.push(`/checklist-result/${testSuite.id}`)}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">

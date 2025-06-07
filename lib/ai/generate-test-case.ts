@@ -36,6 +36,8 @@ export async function generateTestCases({ checklist, projectSettings }: {
         top_p: 1,
     });
 
+    console.log(response.choices[0]?.message?.content);
+
     return response.choices[0]?.message?.content;
 }
 

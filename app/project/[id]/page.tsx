@@ -20,7 +20,7 @@ import { createCheckLists, getVersionLastest } from "@/lib/action/check-list"
 import { splitArray } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { createTestSuite } from "@/lib/action/test-suite"
+import { createTestSuite, getTestSuite, getTestSuites } from "@/lib/action/test-suite"
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -34,16 +34,19 @@ export default function ProjectDetailPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [testSuiteName, setTestSuiteName] = useState("")
 
+  console.log('conversations', conversations)
+
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [projectData] = await Promise.all([
+        const [projectData, testSuit] = await Promise.all([
           getProject(projectId),
-          //   getProjectConversations(projectId),
+          getTestSuites(projectId),
         ])
         setProject(projectData)
-        // setConversations(conversationsData)
+        console.log('testSuit', testSuit)
+        setConversations(testSuit)
       } catch (error) {
         console.error("Failed to fetch project data:", error)
         // toast({
@@ -113,7 +116,7 @@ export default function ProjectDetailPage() {
       const testSuite = await createTestSuite(
         testSuiteName,
         projectId,
-        ''
+        requirements,
       );
 
       console.log('testSuite', testSuite)
@@ -175,7 +178,7 @@ export default function ProjectDetailPage() {
         await Promise.all(promises);
       }
 
-      router.push(`/test-suite/${testSuite.id}`)
+      router.push(`/checklist-result/${testSuite.id}`)
     } catch (error) {
       console.log("Error creating checklist:", error)
     } finally {
@@ -187,7 +190,7 @@ export default function ProjectDetailPage() {
     // Load conversation và redirect đến checklist result
     sessionStorage.setItem("generatedChecklist", JSON.stringify(conversation.checklistItems || []))
     sessionStorage.setItem("currentConversationId", conversation.id)
-    router.push("/checklist-result")
+    router.push(`/checklist-result/${conversation.id}`)
   }
 
   const handleDeleteConversation = async (conversationId: string) => {
@@ -207,7 +210,8 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (input: string) => {
+    const date = new Date(input);
     const now = new Date()
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
 
@@ -328,9 +332,9 @@ export default function ProjectDetailPage() {
                             <MessageSquare className="w-4 h-4 text-gray-600" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-sm truncate">{conversation.title}</h3>
+                            <h3 className="font-medium text-sm truncate">{conversation.name}</h3>
                             <p className="text-xs text-gray-500 mt-1">{conversation.description || "No description"}</p>
-                            <p className="text-xs text-gray-400 mt-2">{formatTimeAgo(conversation.updatedAt)}</p>
+                            <p className="text-xs text-gray-400 mt-2">{conversation.created_at ? formatTimeAgo(conversation.created_at) : 'N/A'}</p>
                           </div>
                         </div>
 

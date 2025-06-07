@@ -39,6 +39,7 @@ import { generateTestCases } from "@/lib/ai/generate-gemini-test-case"
 import { getTestCases } from "@/lib/action/test-case"
 import { exportTestCase, exportTestReport } from "@/lib/lark"
 import { generateTestReport } from "@/lib/ai/generate-gemini-test-case"
+import { Tooltip } from "@/components/ui/tooltip"
 
 export enum TestCaseStatus {
   PENDING = 'Pending',
@@ -51,6 +52,20 @@ export enum Priority {
   HIGH = 'H',
   MEDIUM = 'M',
   LOW = 'L',
+}
+
+const PriorityByNumber: Record<string, Priority> = {
+  '1': Priority.LOW,
+  '2': Priority.MEDIUM,
+  '3': Priority.HIGH,
+  '4': Priority.CRITICAL,
+}
+
+const PriorityStringByNumber: Record<string, string> = {
+  '1': 'Low',
+  '2': 'Medium',
+  '3': 'High',
+  '4': 'Critical',
 }
 
 interface TestCase {
@@ -1687,31 +1702,30 @@ export default function ChecklistResultPage() {
                         <tbody className="bg-white">
                           {combineStatus?.map((data: any, index: number) => (
                             <tr key={index} className="border-b hover:bg-gray-50">
-                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 {index}
-                              </td> : null }
-                              { data.span ? <td rowSpan={data.span}  className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null}
+                              {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.title}</div>
-                              </td> : null }
-                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null}
+                              {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.title ?? 'title'}</div>
-                              </td> : null }
-                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null}
+                              {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 {data.category}
-                              </td> : null }
-                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null}
+                              {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 {data.sub_category}
-                              </td> : null }
-                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
-                                {getPriorityDot(data.priority)}
-                                {data.priority}
-                              </td> : null }
-                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null}
+                              {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
+                               {getPriorityDot(PriorityByNumber[data.priority.toString() as string])} {PriorityStringByNumber[data.priority.toString()]}
+                              </td> : null}
+                              {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.pre_condition ?? 'N/A'}</div>
-                              </td> : null }
-                              { data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
+                              </td> : null}
+                              {data.span ? <td rowSpan={data.span} className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.description ?? 'N/A'}</div>
-                              </td> : null }
+                              </td> : null}
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.step ?? 'N/A'}</div>
                               </td>

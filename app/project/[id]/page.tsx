@@ -20,7 +20,8 @@ import { createCheckLists, getVersionLastest } from "@/lib/action/check-list"
 import { splitArray } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { createTestSuite } from "@/lib/action/test-suite"
+import { createTestSuite, getTestSuites } from "@/lib/action/test-suite"
+import { getContentFromLarkDoc } from "@/lib/lark"
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -33,24 +34,18 @@ export default function ProjectDetailPage() {
   const [requirements, setRequirements] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [testSuiteName, setTestSuiteName] = useState("")
-
+  const [larkDocument, setLarkDocument] = useState('')
+  const [testSuites, setTestSuites] = useState<any[]>([])
 
   useEffect(() => {
     async function fetchData() {
       try {
         const [projectData] = await Promise.all([
           getProject(projectId),
-          //   getProjectConversations(projectId),
         ])
         setProject(projectData)
-        // setConversations(conversationsData)
       } catch (error) {
         console.error("Failed to fetch project data:", error)
-        // toast({
-        //   title: "Lỗi",
-        //   description: "Không thể tải thông tin project",
-        //   variant: "destructive",
-        // })
         router.push("/project")
       } finally {
         setLoading(false)
@@ -60,48 +55,36 @@ export default function ProjectDetailPage() {
     fetchData()
   }, [projectId, router])
 
+  useEffect(() => {
+    if (!projectId) return;
+
+    const fetchTestSuite = async () => {
+      try {
+        const testSuites = await getTestSuites(projectId);
+        setTestSuites(testSuites || []);
+      } catch (error) {
+        console.error("Failed to fetch conversations:", error);
+      }
+    };
+
+    fetchTestSuite();
+  }, [isGenerating]);
+  
+
   const handleCreateChecklist = useCallback(async () => {
-    // if (!requirements.trim()) {
-    // //   toast({
-    // //     title: "Lỗi",
-    // //     description: "Vui lòng nhập yêu cầu trước khi tạo checklist",
-    // //     variant: "destructive",
-    // //   })
-    //   return
-    // }
-
-    // try {
-    //   setIsGenerating(true)
-
-    //   // Tạo conversation mới
-    // //   const conversation = await createConversation({
-    // //     projectId,
-    // //     title: requirements.slice(0, 50) + (requirements.length > 50 ? "..." : ""),
-    // //     content: requirements,
-    // //   })
-
-    //   // Generate checklist
-    // //   const result = await generateChecklist({
-    // //     content: requirements,
-    // //     images: [],
-    // //     testingTypes: project?.testingTypes || {},
-    // //   })
-
-    // //   if (result.success) {
-    //     // Store checklist và conversation ID
-    //     // sessionStorage.setItem("generatedChecklist", JSON.stringify(result.items))
-    //     // sessionStorage.setItem("currentConversationId", conversation.id)
-    //     // router.push("/checklist-result")
-    // //   }
-    // } catch (error) {
-    // //   toast({
-    // //     title: "Lỗi",
-    // //     description: "Không thể tạo checklist. Vui lòng thử lại.",
-    // //     variant: "destructive",
-    // //   })
-    // } finally {
-    //   setIsGenerating(false)
-    // }
+    let documentContent = '';
+    const pattern =  /^https:\/\/[a-zA-Z0-9.-]+\.larksuite\.com\/docx\/[a-zA-Z0-9_-]+$/;
+    if (larkDocument?.trim() && pattern.test(larkDocument?.trim())) {
+      const documentId = larkDocument?.trim().split('/').pop();
+      try {
+        // Call Lark API to get document content
+        const { data } = await getContentFromLarkDoc(documentId as string);
+        documentContent = data || '';
+      } catch (error) {
+        console.error("Error fetching Lark document content:", error);
+        return;
+      }
+    }
 
     if (!requirements.trim() || !testSuiteName.trim()) {
       return
@@ -116,10 +99,8 @@ export default function ProjectDetailPage() {
         ''
       );
 
-      console.log('testSuite', testSuite)
-
-
       const response = await generateCheckListGemini({
+        document: documentContent,
         checklist: requirements,
         projectSettings: project?.settings || {},
       });
@@ -127,16 +108,6 @@ export default function ProjectDetailPage() {
       console.log("Generated checklist:", response)
 
       // Save to DB checklist and conversatio
-
-      // const dataUpsert = response.map((item: any, index: number) => ({
-      //   category: item.category,
-      //   subCategory: item.subCategory,
-      //   // data: item.data,
-      //   projectId: +projectId,
-      //   number: +item.data.number,
-      //   priority: item.data.priority,
-      //   content: item.data.content,
-      // }));
 
       const dataUpsert: any[] = [];
       response?.map((item: any, index: number) => {
@@ -152,14 +123,7 @@ export default function ProjectDetailPage() {
         })
       });
 
-
-      console.log("Data to upsert:", dataUpsert)
-
       const versionLastest = await getVersionLastest();
-
-      console.log('versionLastest:', versionLastest)
-
-
       const dataSplit = splitArray(dataUpsert, 5);
       for (const data of dataSplit) {
         let promises = [];
@@ -171,8 +135,7 @@ export default function ProjectDetailPage() {
             })
           );
         }
-        // await createCheckLists(data);
-        await Promise.all(promises);
+        await Promise.allSettled(promises);
       }
 
       router.push(`/test-suite/${testSuite.id}`)
@@ -181,7 +144,7 @@ export default function ProjectDetailPage() {
     } finally {
       setIsGenerating(false)
     }
-  }, [requirements, project?.settings, projectId, router, testSuiteName]);
+  }, [requirements, project?.settings, projectId, router, testSuiteName, larkDocument]);
 
   const handleConversationClick = (conversation: any) => {
     // Load conversation và redirect đến checklist result
@@ -285,6 +248,19 @@ export default function ProjectDetailPage() {
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="name">
+                      Link lark document <span className="text-red-500">(Optional)</span>
+                    </Label>
+                    <Input
+                      id="lark-document"
+                      placeholder="https://qsgekjhfr3py.sg.larksuite.com/docx/1234567890"
+                      value={larkDocument}
+                      onChange={(e) => setLarkDocument(e.target.value)}
+                      required
+                    />
+                  </div>
+
                   <Textarea
                     placeholder="Describe the feature requirement, user flow, expected behavior, and any specific scenarios to test..."
                     value={requirements}
@@ -313,66 +289,28 @@ export default function ProjectDetailPage() {
             </Card>
 
             {/* Conversations List */}
+
             <div className="space-y-3">
-              {conversations.length > 0 ? (
-                conversations.map((conversation) => (
+              <h3 className="text-3xl font-bold tracking-tight">Check list:</h3>
+              {testSuites.map((testSuite) => (
                   <Card
-                    key={conversation.id}
+                    key={testSuite.id}
                     className="hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => handleConversationClick(conversation)}
+                    onClick={() => {}}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-3 flex-1">
-                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <MessageSquare className="w-4 h-4 text-gray-600" />
-                          </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-sm truncate">{conversation.title}</h3>
-                            <p className="text-xs text-gray-500 mt-1">{conversation.description || "No description"}</p>
-                            <p className="text-xs text-gray-400 mt-2">{formatTimeAgo(conversation.updatedAt)}</p>
+                            <h3 className="font-medium text-sm truncate">{testSuite.name}</h3>
+                            <p className="text-xs text-gray-500 mt-1">{testSuite.description || "No description"}</p>
                           </div>
                         </div>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleConversationClick(conversation)}>
-                              Open
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteConversation(conversation.id)
-                              }}
-                              className="text-red-600"
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
                     </CardContent>
                   </Card>
                 ))
-              ) : (
-                <div className="text-center py-12">
-                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-4">No conversations yet</p>
-                  <p className="text-sm text-gray-400">
-                    Start by describing your feature requirements above to create your first checklist
-                  </p>
-                </div>
-              )}
+              }
             </div>
           </div>
         </div>

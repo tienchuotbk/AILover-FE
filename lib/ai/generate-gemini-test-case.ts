@@ -9,7 +9,12 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
  * @returns {Promise<string | undefined>} A promise that resolves with the generated text from the Gemini API,
  * or undefined if an error occurs.
  */
-export async function generateCheckListGemini({ checklist, projectSettings }: {
+export async function generateCheckListGemini({
+    document,
+    checklist,
+    projectSettings
+}: {
+    document: string,
     checklist: string,
     projectSettings: any,
 }) {
@@ -27,7 +32,7 @@ export async function generateCheckListGemini({ checklist, projectSettings }: {
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: modelName });
     const prompt = `
-            You are an expert QA/QC professional in software testing. Your task is to analyze user requirements and create structured test checklists or test cases.
+            You are an expert QA/QC professional in software testing. Your tasks are learn about the product documents, analyze user requirements and create structured test checklists or test cases.
             Based on the available information, you will: Analyze the feature details provided by the user Identify necessary test cases, paying special attention to project-specific characteristics Organize the checklist according to user flow from start to finish, or by functional group if requested Create a clear hierarchical structure Within each flow step, arrange test cases by priority (happy paths first, error cases, edge cases after) Organize the checklist following the sequential flow of user actions
             Based on the available information, you will:
             Analyze the feature details provided by the user
@@ -36,8 +41,13 @@ export async function generateCheckListGemini({ checklist, projectSettings }: {
             Create a clear hierarchical structure
             Within each flow step, arrange test cases by priority (happy paths first, error cases, edge cases after)
             Organize the checklist following the sequential flow of user actions
-            Project description:
+
+            Product documentation (Optional):
+            ${document}
+
+            Project/Feature description ():
             ${checklist}
+
             Your response MUST be on regular text format (no coding block), no explanatory text and follow:
             No explanation text or title, just only checklist items
             Categories should be numbered sequentially (1, 2, 3, etc.)

@@ -33,7 +33,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EditTestCaseModal } from "@/components/edit-test-case-modal"
 import { GenerateTestCaseModal } from "@/components/generate-test-case-modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { createCheckLists, deleteCheckList, getCheckLists, getListVersion, getVersionLastest, updateCheckList } from "@/lib/action/check-list"
+import { createCheckLists, deleteCheckList, getCheckLists, getListVersion, getVersionLastest, updateCheckList, updateStatusChecklist } from "@/lib/action/check-list"
 import { formatChecklistToMarkdown, splitArray } from "@/lib/utils"
 import { generateCheckListGemini, generateTestCases } from "@/lib/ai/generate-gemini-test-case"
 import { getTestCases } from "@/lib/action/test-case"
@@ -770,7 +770,7 @@ export default function ChecklistResultPage() {
     setExpandedCategories(expanded)
   }
 
-  const handleItemToggle = (id: string, completed: boolean) => {
+  const handleItemToggle = async (id: string, completed: boolean) => {
     setCheckList((prev) => prev.map((item) => (item.id === id ? { ...item, completed } : item)))
 
     // Update categories to reflect the change
@@ -780,6 +780,9 @@ export default function ChecklistResultPage() {
         items: category.items.map((item) => (item.id === id ? { ...item, completed } : item)),
       })),
     )
+
+    const update = await updateStatusChecklist(id);
+    console.log(update);
 
     toast({
       title: completed ? "Test case marked as completed" : "Test case marked as incomplete",
@@ -994,7 +997,16 @@ export default function ChecklistResultPage() {
   }
 
   const totalChecks = checkList?.length ?? 0;
-  const completedChecks = checklistItems.filter((item) => item.completed).length
+  // const completedChecks = categories.filter((item) => item.completed).length
+  // console.log('completedChecks', categories);
+
+  const completedChecks = useMemo(()=> {
+    let count = 0;
+    categories.forEach((category) => {
+      count += category.items.filter((item: any) => item.completed).length;
+    });
+    return count;
+  }, [categories]);
 
   const handleEditTestCase = (testCase: any) => {
     setEditingTestCase(testCase)

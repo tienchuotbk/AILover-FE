@@ -148,3 +148,23 @@ export async function deleteCheckList(checkListId: string) {
 
     return data
 }
+
+
+export async function updateStatusChecklist(checkListId: number | string) {
+    const supabase = createClient()
+    const { data, error } = await supabase
+        .from("check_list")
+        .update({
+            completed: 1,
+        })
+        .eq("id", checkListId)
+        .select("*")
+        .single()
+
+    if (error) {
+        console.error("Error updating checklist status:", error)
+        throw error
+    }
+
+    return data
+}

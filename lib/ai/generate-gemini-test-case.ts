@@ -119,7 +119,7 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
     const modelName = "gemini-2.5-flash-preview-04-17"; // Thay thế bằng model chính xác bạn muốn dùng
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: modelName });
-    
+
 
     const prompt = `
         Generate test cases from the checklist (each test case will be display below each related check item), using the following format:
@@ -137,7 +137,7 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
         Step: [Step of the testcase, start from 1]
         Action: [Action of the step]
         Expected: [Expected result of step]
-        Test Data: [Test data or N/A if not applicable]
+        TestData: [Test data or N/A if not applicable]
         )
         [Add additional steps as needed following the same format]
         Note: Replace $PREFIX with "LG-" and use sequential numbers (001, 002, 003,... format)
@@ -228,27 +228,29 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
         // }
         const data = [];
 
-        resultArray.map((item)=> {
+        resultArray.map((item) => {
             data.push({
                 title: item.Title,
                 category: item.Category,
                 sub_category: item['Sub-Category'],
                 priority: item.Priority,
-                steps: item.Step.map((step, index) => ({
-                    step: index,
-                    pre_condition: step.precondition,
-                    description: step.action,
-                    expected: step.expected,
+                pre_condition: item.Precondition,
+                steps: item.Step.map((step: any) => ({
+                    step: step.Step,
+                    action: step.Action,
+                    expected: step.Expected,
                     status: 2,
+                    testData: step["TestData"]
                 })),
                 check_list_id: item.ChecklistId,
                 test_suit_id: Number(test_suit_id),
-        })
+                description: item.Description,
+            })
         });
         console.log('data ne', data)
         try {
             bulkInsertTestcase(data);
-        } catch(err){
+        } catch (err) {
             console.log('Error bulkInsertTestcase:', err)
         }
 

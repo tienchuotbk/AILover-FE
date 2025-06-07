@@ -197,6 +197,7 @@ export default function ChecklistResultPage() {
       setExpandedCategories(expanded);
 
       const tests = await getTestCases(testSuiteId);
+      console.log('Testcase ne', tests)
       if (tests) {
         setTestcase(tests);
       }
@@ -221,23 +222,38 @@ export default function ChecklistResultPage() {
 
   const combineStatus: any[] = useMemo(() => {
     let temp = [];
-    testCase?.map((test: any) => {
+    // title: item.Title,
+    //             category: item.Category,
+    //             sub_category: item['Sub-Category'],
+    //             priority: item.Priority,
+    //             pre_condition: item.Precondition,
+    //             steps: item.Step.map((step: any) => ({
+    //                 step: step.Step,
+    //                 action: step.Action,
+    //                 expected: step.Expected,
+    //                 status: 2,
+    //                 testData: step["TestData"]
+    //             })),
+    //             check_list_id: item.ChecklistId,
+    //             test_suit_id: Number(test_suit_id),
+    testCase?.map((test: any, index1: number) => {
       test?.steps?.map((step: any, index: number) => {
         temp.push({
-          id: index > 0 ? '' : test.id,
+          id: index1,
           check_list_id: index > 0 ? '' : test.id,
           category: index > 0 ? '' : test.category,
-          priority: index > 0 ? '' : test.priority,
+          priority: index > 0 ? null : test.priority,
           status: index > 0 ? '' : test.status,
           sub_category: index > 0 ? '' : test.sub_category,
           test_suit_id: index > 0 ? '' : test.test_suit_id,
           title: index > 0 ? '' : test.title,
           step: step.step,
-          description: step.description,
           expected: step.expected,
-          pre_condition: step.pre_condition,
+          pre_condition: index > 0 ? '' : test.pre_condition,
           step_status: step.status,
           action: step.action,
+          test_data: step.testData,
+          description: index > 0 ? '' : test.description,
         })
       })
     });
@@ -963,6 +979,7 @@ export default function ChecklistResultPage() {
   }
 
   const getPriorityDot = (priority: Priority) => {
+    if(!priority) return null;
     const color = getPriorityColor(priority)
     return <span className={`inline-block w-3 h-3 rounded-full ${color} mr-1`}></span>
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -35,8 +35,8 @@ import { GenerateTestCaseModal } from "@/components/generate-test-case-modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getCheckLists, getListVersion, getVersionLastest } from "@/lib/action/check-list"
 import { formatChecklistToMarkdown } from "@/lib/utils"
-import { generateTestCases } from "@/lib/ai/generate-gemini-test-case"
-import { getTestCases } from "@/lib/action/test-case"
+import { exportTestCase, exportTestReport } from "@/lib/lark"
+import { generateTestReport } from "@/lib/ai/generate-gemini-test-case"
 
 export enum TestCaseStatus {
   PENDING = 'Pending',
@@ -78,6 +78,7 @@ export default function ChecklistResultPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [rightPanelView, setRightPanelView] = useState<"default" | "history" | "changes">("history")
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false)
+  const [generatedTestCases, setGeneratedTestCases] = useState<TestCase[]>([])
   const [requirementInput, setRequirementInput] = useState("")
 
   const [checkList, setCheckList] = useState<any | null>(null)
@@ -86,9 +87,8 @@ export default function ChecklistResultPage() {
   const [promptForTestCase, setPromptForTestCase] = useState<string[]>([]);
   const router = useRouter()
 
-  const [testCase, setTestcase] = useState([]);
-
-  console.log('testCase', testCase)
+  console.log('checkList', checkList)
+  console.log(listVersion)
 
   useEffect(() => {
     async function fetchData() {
@@ -194,12 +194,7 @@ export default function ChecklistResultPage() {
       categoryObject.forEach((category) => {
         expanded[category.id] = true
       })
-      setExpandedCategories(expanded);
-
-      const tests = await getTestCases(testSuiteId);
-      if (tests) {
-        setTestcase(tests);
-      }
+      setExpandedCategories(expanded)
     }
     fetchData();
   }, [router]);
@@ -218,33 +213,6 @@ export default function ChecklistResultPage() {
   }
 
   const handleStatusChange = () => { }
-
-  const combineStatus: any[] = useMemo(() => {
-    let temp = [];
-    testCase?.map((test: any) => {
-      test?.steps?.map((step: any, index: number) => {
-        temp.push({
-          id: index > 0 ? '' : test.id,
-          check_list_id: index > 0 ? '' : test.id,
-          category: index > 0 ? '' : test.category,
-          priority: index > 0 ? '' : test.priority,
-          status: index > 0 ? '' : test.status,
-          sub_category: index > 0 ? '' : test.sub_category,
-          test_suit_id: index > 0 ? '' : test.test_suit_id,
-          title: index > 0 ? '' : test.title,
-          step: step.step,
-          description: step.description,
-          expected: step.expected,
-          pre_condition: step.pre_condition,
-          step_status: step.status,
-          action: step.action,
-        })
-      })
-    });
-    return temp;
-  }, [testCase]);
-
-  console.log('combineStatus', combineStatus)
 
   const createMockData = () => {
     const mockItems: any[] = [
@@ -783,7 +751,7 @@ export default function ChecklistResultPage() {
   }
 
   const handleItemToggle = (id: string, completed: boolean) => {
-    setCheckList((prev) => prev.map((item) => (item.id === id ? { ...item, completed } : item)))
+    setChecklistItems((prev) => prev.map((item) => (item.id === id ? { ...item, completed } : item)))
 
     // Update categories to reflect the change
     setCategories((prev) =>
@@ -1004,7 +972,7 @@ export default function ChecklistResultPage() {
     return categories.filter((category) => category.mainCategory === mainCategory)
   }
 
-  const totalChecks = checkList?.length ?? 0;
+  const totalChecks = checklistItems.length
   const completedChecks = checklistItems.filter((item) => item.completed).length
 
   const handleEditTestCase = (testCase: any) => {
@@ -1046,7 +1014,7 @@ export default function ChecklistResultPage() {
     })
   }
 
-  const handleGenerateTestCases = async (settings: any) => {
+  const handleGenerateTestCases = (settings: any) => {
     // Mock generated test cases
     const mockTestCases: TestCase[] = [
       {
@@ -1109,16 +1077,13 @@ export default function ChecklistResultPage() {
       },
     ]
 
-    // setGeneratedTestCases(mockTestCases)
+    setGeneratedTestCases(mockTestCases)
     setActiveTab("testcases")
 
     toast({
       title: "Test cases generated successfully",
       description: `Generated ${mockTestCases.length} test cases`,
     })
-
-    const data = await generateTestCases(checkList, testSuiteId);
-    setTestcase(data);
   }
 
   const handleSendRequirement = () => {
@@ -1140,6 +1105,37 @@ export default function ChecklistResultPage() {
     })
   }
 
+  const handleExportTestCase = useCallback(async () => {
+    try {
+
+      // Create file sheet on lark
+      const { data } = await exportTestCase(checkList);
+      if (data) {
+        window.open(data, "_blank");
+      }
+    } catch (error) {
+      console.error("Error exporting report:", error);
+    }
+  }, [checkList]);
+
+
+  const handleExportTestReport = useCallback(async () => {
+    const newCheckList = checkList.map((item: any) => ({
+      ...item,
+      // random status for demo purposes with 3 statuses: PASS, FAIL, PENDING
+      status: Math.random() > 0.5 ? "PASS" : Math.random() > 0.5 ? "FAIL" : "PENDING",
+    }));
+
+    const response = await generateTestReport(newCheckList);
+
+    if (response) {
+      const { data } = await exportTestReport(response);
+      if (data) {
+        window.open(data, "_blank", "noopener,noreferrer");
+      }
+    }
+  }, [checkList]);
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -1148,7 +1144,7 @@ export default function ChecklistResultPage() {
           {/* Header */}
           <div className="flex items-center justify-between border-b p-4">
             <div className="flex items-center space-x-4">
-              <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
+              <button onClick={() => router.push("/projects/1")} className="text-gray-500 hover:text-gray-700">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <h1 className="text-xl font-semibold">{projectTitle}</h1>
@@ -1296,6 +1292,8 @@ export default function ChecklistResultPage() {
                           const totalChecksInSubCategory = getTotalChecksBySubCategory(subCategory.id)
                           const completedChecksInSubCategory = getCompletedChecksBySubCategory(subCategory.id)
                           const isExpanded = expandedCategories[subCategory.id]
+
+                          console.log('1234', subCategory)
 
                           return (
                             <div key={subCategory.id} className="border-t">
@@ -1589,29 +1587,28 @@ export default function ChecklistResultPage() {
                   <div className="border-b p-4">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-4">
-                        <h2 className="text-lg font-semibold">Test case</h2>
+                        <h2 className="text-lg font-semibold">Màn hình Đăng nhập</h2>
                         <span className="text-sm text-gray-500">Version 1</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm"
+                          onClick={handleExportTestCase}
+                        >
                           <FileSpreadsheet className="w-4 h-4 mr-2" />
-                          Export to Excel
+                          Export Test Cases
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <Printer className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <Grid3X3 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <List className="w-4 h-4" />
+                        <Button variant="outline" size="sm"
+                          onClick={handleExportTestReport}
+                        >
+                          <FileSpreadsheet className="w-4 h-4 mr-2" />
+                          Export Test Report
                         </Button>
                       </div>
                     </div>
 
                     {/* Statistics */}
                     <div className="flex items-center space-x-4 mb-4">
-                      <Badge className="bg-green-100 text-green-800">10 Test Cases</Badge>
+                      <Badge className="bg-green-100 text-green-800">{generatedTestCases.length} Test Cases</Badge>
                       <Badge className="bg-blue-100 text-blue-800">208 Steps</Badge>
                     </div>
 
@@ -1690,13 +1687,13 @@ export default function ChecklistResultPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white">
-                          {combineStatus?.map((data: any, index: number) => (
-                            <tr key={index} className="border-b hover:bg-gray-50">
+                          {checkList?.map((data, index) => (
+                            <tr key={data.id} className="border-b hover:bg-gray-50">
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                {index}
+                                {data.id}
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.title}</div>
+                                <div className="max-w-xs break-words">{data.content}</div>
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.title ?? 'title'}</div>
@@ -1705,33 +1702,33 @@ export default function ChecklistResultPage() {
                                 {data.category}
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                {data.sub_category}
+                                {data.subCategory}
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
-                                {getPriorityDot(data.priority)}
                                 {data.priority}
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.pre_condition ?? 'N/A'}</div>
+                                <div className="max-w-xs break-words">{data.preCondition ?? 'N/A'}</div>
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.description ?? 'N/A'}</div>
+                                <div className="max-w-xs break-words">{data.description}</div>
                               </td>
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.step ?? 'N/A'}</div>
+                                <div className="max-w-xs break-words space-y-1">
+                                  {data?.steps?.map((step, stepIndex) => (
+                                    <div key={stepIndex}>{step}</div>
+                                  ))}
+                                </div>
                               </td>
-                              
-                              
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.expected ?? 'N/A'}</div>
+                                <div className="max-w-xs break-words">{data.expectedResult}</div>
                               </td>
-                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
-                                <div className="max-w-xs break-words">{data.test_data ?? 'N/A'}</div>
+                              <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top text-center">
+                                {data.testData}
                               </td>
-
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <Select
-                                  value={data.step_status}
+                                  value={data.status}
                                   onValueChange={(value: TestCaseStatus) =>
                                     handleStatusChange()
                                   }
@@ -1764,7 +1761,6 @@ export default function ChecklistResultPage() {
                                 </Select>
                               </td>
                             </tr>
-
                           ))}
                         </tbody>
                       </table>

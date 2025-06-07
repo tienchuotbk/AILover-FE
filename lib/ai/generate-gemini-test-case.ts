@@ -1,5 +1,4 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { bulkInsertTestcase } from "../action/test-case";
 
 /**
  * Generates test cases based on a checklist and project settings using the Gemini API.
@@ -108,7 +107,7 @@ export async function generateCheckListGemini({
     }
 }
 
-export async function generateTestCases(checkList: any, test_suit_id: string) {
+export async function generateTestCases(checkList: any) {
     const API_KEY = process.env.GEMINI_API_KE || 'AIzaSyCPtMYMP9FVh3aw8oEPd3oNjWSqoulRTFY';
 
     if (!API_KEY) {
@@ -119,32 +118,36 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
     const modelName = "gemini-2.5-flash-preview-04-17"; // Thay thế bằng model chính xác bạn muốn dùng
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: modelName });
-    
+
 
     const prompt = `
         Generate test cases from the checklist (each test case will be display below each related check item), using the following format:
         ID: $PREFIX_001
-        ChecklistId: [The id number of the initial checklist, number only]
+        Checklist-ID: [Checklist ID]
         Category: [Category Name]
         Sub-Category: [Sub-Category]
         Checklist: [Checklist Item in their own language]
         Priority: [Priority Number 1-4]
         Title: [Title of testcase]
         Description: [Description of testcase]
-        Precondition: [Precondition of the testcase]
         Step: [Step No]
-        Each step has following field: (
-        Step: [Step of the testcase, start from 1]
-        Action: [Action of the step]
+        Action: [Details of test step]
         Expected: [Expected result of step]
         Test Data: [Test data or N/A if not applicable]
-        )
+        Step: [Step No]
+        Action: [Details of test step]
+        Expected: [Expected result of step]
+        Test Data: [Test data or N/A if not applicable]
         [Add additional steps as needed following the same format]
         Note: Replace $PREFIX with "LG-" and use sequential numbers (001, 002, 003,... format)
+        Test Data Examples:
+        email company:
+
 
         Requirements:
         Generate 20 test cases for each time
-        Write testcase content, Category and Subcategory all in English
+        Write testcase content, Category and Subcategory in English
+        Write "Checklist" content in their language when send to you
         Each test case should have a unique ID starting with "LG-" followed by sequential numbers
         Test steps should be basic with essential actions only
         Include relevant test data from the examples provided
@@ -196,61 +199,98 @@ export async function generateTestCases(checkList: any, test_suit_id: string) {
 
 
         console.log('gen test case result:', resultArray);
-        //         {
-        //     "ID": "LG-001",
-        //     "Checklist-ID": "CHK-001",
-        //     "Category": "Authentication",
-        //     "Sub-Category": "Login",
-        //     "Checklist": "ログインが成功すること",
-        //     "Priority": 2,
-        //     "Title": "Successful login with valid standard credentials",
-        //     "Description": "Verify that a user can successfully log in using valid email and password.",
-        //     "Step": [
-        //         {
-        //             "Action": "Navigate to the login page.",
-        //             "Expected": "Login page is displayed.",
-        //             "Test Data": "N/A"
-        //         },
-        //         {
-        //             "Action": "Enter valid email and password.",
-        //             "Expected": "Fields accept input correctly.",
-        //             "Test Data": {
-        //                 "email": "valid.user@example.com",
-        //                 "password": "ValidPassword123"
-        //             }
-        //         },
-        //         {
-        //             "Action": "Click the 'Login' button.",
-        //             "Expected": "User is successfully logged in and redirected to the dashboard or profile page.",
-        //             "Test Data": "N/A"
-        //         }
-        //     ]
-        // }
-        const data = [];
 
-        resultArray.map((item)=> {
-            data.push({
-                title: item.Title,
-                category: item.Category,
-                sub_category: item['Sub-Category'],
-                priority: item.Priority,
-                steps: item.Step.map((step, index) => ({
-                    step: index,
-                    pre_condition: step.precondition,
-                    description: step.action,
-                    expected: step.expected,
-                    status: 2,
-                })),
-                check_list_id: item.ChecklistId,
-                test_suit_id: Number(test_suit_id),
-        })
-        });
-        console.log('data ne', data)
-        try {
-            bulkInsertTestcase(data);
-        } catch(err){
-            console.log('Error bulkInsertTestcase:', err)
+        return resultArray;
+    } catch (error) {
+        console.error("Error generating content:", error);
+    }
+}
+
+export async function generateTestReport(testCases: any) {
+    const API_KEY = process.env.GEMINI_API_KE || 'AIzaSyCPtMYMP9FVh3aw8oEPd3oNjWSqoulRTFY';
+
+    if (!API_KEY) {
+        console.error("GEMINI_API_KEY is not set in environment variables.");
+        return undefined;
+    }
+
+    const modelName = "gemini-2.5-flash-preview-04-17"; // Thay thế bằng model chính xác bạn muốn dùng
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+    const prompt = `
+        Test cases:
+        ${JSON.stringify(testCases)}
+
+        Create a test report from a JSON list of test cases. Please analyze the data and generate a test report that includes the following sections:
+
+        1. Test execution progress (how many test cases have been executed vs. total)
+        2. Number of test cases that related to their status and their percentage
+        3. Risk analysis based on failed or blocked test cases
+        4. Actionable recommendations to improve the test results
+
+        Your response MUST be a valid JSON.
+        Follow format:
+        {
+            summary: "A brief summary of the test execution",
+            executedTestCases: 10,
+            totalTestCases: 20,
+            executionProgressPercentage: 50,
+            recommendations: [
+                "Recommendation 1",
+                "Recommendation 2",
+                "Recommendation 3"
+            ],
+            statusBreakdown: {
+                FAIL: {
+                    count: 5,
+                    percentage: 25   
+                },
+                PASS: {
+                    count: 10,
+                    percentage: 50
+                },
+                PENDING: {
+                    count: 5,
+                    percentage: 25
+                },
+                TOTAL: {
+                    count: 20,
+                    percentage: 100
+                }
+            }
         }
+    `;
+
+    const requestPayload = {
+        contents: [
+            {
+                role: "user",
+                parts: [
+                    {
+                        text: prompt
+                    }
+                ]
+            }
+        ]
+    };
+
+    try {
+        const result = await model.generateContent(requestPayload); // Truyền trực tiếp đối tượng request
+        const response = result.response;
+        const text = response.text();
+        const jsonText = text.replace(/^```json\n/, "").replace(/\n```$/, "");
+
+        // Bước 2: Parse string thành array of objects
+        let resultArray;
+        try {
+            resultArray = JSON.parse(jsonText);
+        } catch (err) {
+            console.error("JSON parse error:", err);
+        }
+
+
+        console.log('gen test case result:', resultArray);
 
         return resultArray;
     } catch (error) {

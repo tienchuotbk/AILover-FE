@@ -38,6 +38,9 @@ export function AppSidebar() {
 
   useEffect(() => {
     async function fetchProjects() {
+      if(!user?.id){
+        return;
+      }
       try {
         const data = await getProjects(user?.id);
         setProjects(data)

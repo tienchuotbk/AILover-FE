@@ -27,6 +27,10 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     async function fetchProjects() {
+      if(!user?.id){
+        setLoading(false);
+        return;
+      }
       try {
         const data = await getProjects(user?.id)
 

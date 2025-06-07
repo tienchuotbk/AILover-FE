@@ -54,11 +54,12 @@ export async function getVersionLastest() {
     return Number(currentVersion) + 1;
 }
 
-export async function getListVersion() {
+export async function getListVersion(testSuiteId?: string) {
     const supabase = createClient()
     const { data, error } = await supabase
         .from("check_list")
         .select("version") // lấy tất cả version
+        .eq("testSuiteId", testSuiteId)
         .order("version", { ascending: false })
 
     if (error) {

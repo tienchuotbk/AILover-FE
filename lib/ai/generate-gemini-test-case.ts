@@ -302,3 +302,95 @@ async function main() {
 // 3. Bỏ comment khối main() ở trên và chạy file (ví dụ: node your-file-name.js)
 // main();
 */
+
+export async function generateTestReport(testCases: any) {
+    const API_KEY = process.env.GEMINI_API_KE || 'AIzaSyCPtMYMP9FVh3aw8oEPd3oNjWSqoulRTFY';
+
+    if (!API_KEY) {
+        console.error("GEMINI_API_KEY is not set in environment variables.");
+        return undefined;
+    }
+
+    const modelName = "gemini-2.5-flash-preview-04-17"; // Thay thế bằng model chính xác bạn muốn dùng
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+    const prompt = `
+        Test cases:
+        ${JSON.stringify(testCases)}
+
+        Create a test report from a JSON list of test cases. Please analyze the data and generate a test report that includes the following sections:
+
+        1. Test execution progress (how many test cases have been executed vs. total)
+        2. Number of test cases that related to their status and their percentage
+        3. Risk analysis based on failed or blocked test cases
+        4. Actionable recommendations to improve the test results
+
+        Your response MUST be a valid JSON.
+        Follow format:
+        {
+            summary: "A brief summary of the test execution",
+            executedTestCases: 10,
+            totalTestCases: 20,
+            executionProgressPercentage: 50,
+            recommendations: [
+                "Recommendation 1",
+                "Recommendation 2",
+                "Recommendation 3"
+            ],
+            statusBreakdown: {
+                FAIL: {
+                    count: 5,
+                    percentage: 25   
+                },
+                PASS: {
+                    count: 10,
+                    percentage: 50
+                },
+                PENDING: {
+                    count: 5,
+                    percentage: 25
+                },
+                TOTAL: {
+                    count: 20,
+                    percentage: 100
+                }
+            }
+        }
+    `;
+
+    const requestPayload = {
+        contents: [
+            {
+                role: "user",
+                parts: [
+                    {
+                        text: prompt
+                    }
+                ]
+            }
+        ]
+    };
+
+    try {
+        const result = await model.generateContent(requestPayload); // Truyền trực tiếp đối tượng request
+        const response = result.response;
+        const text = response.text();
+        const jsonText = text.replace(/^```json\n/, "").replace(/\n```$/, "");
+
+        // Bước 2: Parse string thành array of objects
+        let resultArray;
+        try {
+            resultArray = JSON.parse(jsonText);
+        } catch (err) {
+            console.error("JSON parse error:", err);
+        }
+
+
+        console.log('gen test case result:', resultArray);
+
+        return resultArray;
+    } catch (error) {
+        console.error("Error generating content:", error);
+    }
+}

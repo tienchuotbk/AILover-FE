@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -37,6 +37,8 @@ import { getCheckLists, getListVersion, getVersionLastest } from "@/lib/action/c
 import { formatChecklistToMarkdown } from "@/lib/utils"
 import { generateTestCases } from "@/lib/ai/generate-gemini-test-case"
 import { getTestCases } from "@/lib/action/test-case"
+import { exportTestCase, exportTestReport } from "@/lib/lark"
+import { generateTestReport } from "@/lib/ai/generate-gemini-test-case"
 
 export enum TestCaseStatus {
   PENDING = 'Pending',
@@ -1140,6 +1142,40 @@ export default function ChecklistResultPage() {
     })
   }
 
+  const handleExportTestCase = useCallback(async () => {
+    try {
+
+
+
+
+      // Create file sheet on lark
+      const { data } = await exportTestCase(checkList);
+      if (data) {
+        window.open(data, "_blank");
+      }
+    } catch (error) {
+      console.error("Error exporting report:", error);
+    }
+  }, [checkList]);
+
+
+  const handleExportTestReport = useCallback(async () => {
+    const newCheckList = checkList.map((item: any) => ({
+      ...item,
+      // random status for demo purposes with 3 statuses: PASS, FAIL, PENDING
+      status: Math.random() > 0.5 ? "PASS" : Math.random() > 0.5 ? "FAIL" : "PENDING",
+    }));
+
+    const response = await generateTestReport(newCheckList);
+
+    if (response) {
+      const { data } = await exportTestReport(response);
+      if (data) {
+        window.open(data, "_blank", "noopener,noreferrer");
+      }
+    }
+  }, [checkList]);
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -1593,18 +1629,17 @@ export default function ChecklistResultPage() {
                         <span className="text-sm text-gray-500">Version 1</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm"
+                          onClick={handleExportTestCase}
+                        >
                           <FileSpreadsheet className="w-4 h-4 mr-2" />
-                          Export to Excel
+                          Export Test Cases
                         </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <Printer className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <Grid3X3 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <List className="w-4 h-4" />
+                        <Button variant="outline" size="sm"
+                          onClick={handleExportTestReport}
+                        >
+                          <FileSpreadsheet className="w-4 h-4 mr-2" />
+                          Export Test Report
                         </Button>
                       </div>
                     </div>
@@ -1720,8 +1755,8 @@ export default function ChecklistResultPage() {
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.step ?? 'N/A'}</div>
                               </td>
-                              
-                              
+
+
                               <td className="border border-gray-200 px-3 py-3 text-sm text-gray-900 align-top">
                                 <div className="max-w-xs break-words">{data.expected ?? 'N/A'}</div>
                               </td>
